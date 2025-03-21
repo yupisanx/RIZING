@@ -2,15 +2,16 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore } from 'firebase/firestore';
+import Constants from 'expo-constants';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBvpGGJC8b9ypfHqZ9FGGj8XA4SRQ1SUS0",
-  authDomain: "sololeveling-2e9fd.firebaseapp.com",
-  projectId: "sololeveling-2e9fd",
-  storageBucket: "sololeveling-2e9fd.firebasestorage.app",
-  messagingSenderId: "259118497281",
-  appId: "1:259118497281:web:8a216d0451fc3786ad4a00",
-  measurementId: "G-2E0NSRKG2K"
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
