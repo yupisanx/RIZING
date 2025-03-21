@@ -60,7 +60,6 @@ export default function LoginScreen({ navigation }) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Welcome back</Text>
-            <Text style={styles.subtitle}>Enter your credentials to continue</Text>
           </View>
 
           {/* Form */}
@@ -142,12 +141,6 @@ export default function LoginScreen({ navigation }) {
                   <ChevronRightIcon />
                 </View>
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.forgotPasswordBottom}>
-                <Text style={styles.forgotPasswordText}>
-                  Forgot your password?
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -183,23 +176,26 @@ const styles = StyleSheet.create({
   },
   header: {
     marginTop: 32,
-    marginBottom: 48,
+    marginBottom: 32,
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
-    color: '#d8b4fe', // purple-300
+    color: '#d8b4fe',
+    textAlign: 'center',
   },
   form: {
-    marginBottom: 32,
+    marginBottom: 16,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
@@ -234,13 +230,14 @@ const styles = StyleSheet.create({
   },
   forgotPasswordTop: {
     alignSelf: 'flex-end',
+    marginBottom: 16,
   },
   forgotPasswordText: {
     color: '#c084fc', // purple-400
     fontSize: 12,
   },
   actionContainer: {
-    marginTop: 'auto',
+    marginTop: 8,
     marginBottom: 24,
   },
   submitButton: {
@@ -266,7 +263,7 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   toggleButton: {
     padding: 8,
@@ -282,11 +279,8 @@ const styles = StyleSheet.create({
   toggleHighlight: {
     color: '#c084fc', // purple-400
   },
-  forgotPasswordBottom: {
-    marginTop: 8,
-  },
   footer: {
-    marginTop: 24,
+    marginTop: 'auto',
     alignItems: 'center',
   },
   divider: {

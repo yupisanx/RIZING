@@ -1,4 +1,71 @@
+import React from 'react';
 import Svg, { Path, Circle, Line } from "react-native-svg"
+
+export const Icons = ({ name, size = 16, color = "#c084fc", ...props }) => {
+  switch (name) {
+    case 'mail':
+      return <MailIcon width={size} height={size} stroke={color} {...props} />;
+    case 'lock':
+      return <LockIcon width={size} height={size} stroke={color} {...props} />;
+    case 'user':
+      return <UserIcon width={size} height={size} stroke={color} {...props} />;
+    case 'eye':
+      return <EyeIcon width={size} height={size} stroke={color} {...props} />;
+    case 'eye-off':
+      return <EyeOffIcon width={size} height={size} stroke={color} {...props} />;
+    case 'arrow-right':
+      return <ArrowRightIcon width={size} height={size} stroke={color} {...props} />;
+    case 'chevron-left':
+      return <ChevronLeftIcon width={size} height={size} stroke={color} {...props} />;
+    case 'chevron-right':
+      return <ChevronRightIcon width={size} height={size} stroke={color} {...props} />;
+    case 'home':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          <Path d="M9 22V12h6v10" />
+        </Svg>
+      );
+    case 'activity':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </Svg>
+      );
+    case 'bell':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <Path d="M13.73 21a2 2 0 01-3.46 0" />
+        </Svg>
+      );
+    case 'menu':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Line x1="3" y1="12" x2="21" y2="12" />
+          <Line x1="3" y1="6" x2="21" y2="6" />
+          <Line x1="3" y1="18" x2="21" y2="18" />
+        </Svg>
+      );
+    case 'info':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Circle cx="12" cy="12" r="10" />
+          <Line x1="12" y1="16" x2="12" y2="12" />
+          <Line x1="12" y1="8" x2="12.01" y2="8" />
+        </Svg>
+      );
+    case 'plus':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Line x1="12" y1="5" x2="12" y2="19" />
+          <Line x1="5" y1="12" x2="19" y2="12" />
+        </Svg>
+      );
+    default:
+      return null;
+  }
+};
 
 export const MailIcon = (props: any) => (
   <Svg

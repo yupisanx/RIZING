@@ -27,21 +27,14 @@ import {
 export default function SignupScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const { signup } = useAuth();
 
   const handleSignup = async () => {
-    if (!email || !password || !confirmPassword || !name) {
+    if (!email || !password || !name) {
       Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
@@ -70,9 +63,6 @@ export default function SignupScreen({ navigation }) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Join us</Text>
-            <Text style={styles.subtitle}>
-              Create your account to begin your journey
-            </Text>
           </View>
 
           {/* Form */}
@@ -124,27 +114,6 @@ export default function SignupScreen({ navigation }) {
                   onPress={() => setShowPassword(!showPassword)}
                   activeOpacity={0.7}>
                   {showPassword ? <EyeIcon /> : <EyeOffIcon />}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <View style={styles.inputWrapper}>
-                <LockIcon style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm your password"
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry={!showConfirmPassword}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  activeOpacity={0.7}>
-                  {showConfirmPassword ? <EyeIcon /> : <EyeOffIcon />}
                 </TouchableOpacity>
               </View>
             </View>
@@ -219,36 +188,34 @@ const styles = StyleSheet.create({
   },
   header: {
     marginTop: 32,
-    marginBottom: 48,
+    marginBottom: 32,
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#d8b4fe', // purple-300
+    textAlign: 'center',
   },
   form: {
-    marginBottom: 32,
+    marginBottom: 16,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
-    color: '#d8b4fe', // purple-300
+    color: '#d8b4fe',
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(88, 28, 135, 0.5)', // purple-900/50
+    borderColor: 'rgba(88, 28, 135, 0.5)',
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // black/50
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     height: 50,
     position: 'relative',
   },
@@ -269,7 +236,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   actionContainer: {
-    marginTop: 'auto',
+    marginTop: 8,
     marginBottom: 24,
   },
   submitButton: {
@@ -295,7 +262,7 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   toggleButton: {
     padding: 8,
@@ -305,26 +272,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleText: {
-    color: '#d8b4fe', // purple-300
+    color: '#d8b4fe',
     fontSize: 14,
     marginLeft: 8,
   },
   toggleHighlight: {
-    color: '#c084fc', // purple-400
+    color: '#c084fc',
   },
   footer: {
-    marginTop: 24,
+    marginTop: 'auto',
     alignItems: 'center',
   },
   divider: {
     height: 1,
     width: '100%',
-    backgroundColor: '#a855f7', // purple-500
+    backgroundColor: '#a855f7',
     opacity: 0.3,
     marginBottom: 24,
   },
   footerText: {
-    color: 'rgba(192, 132, 252, 0.6)', // purple-400/60
+    color: 'rgba(192, 132, 252, 0.6)',
     fontSize: 12,
   },
 }); 
