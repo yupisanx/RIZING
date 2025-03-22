@@ -33,7 +33,7 @@ export default function ProfileScreen() {
       />
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconButton}>
-          <Icons name="bell" size={28} color="#d8b4fe" />
+          <Icons name="mail" size={28} color="#d8b4fe" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.menuButton}

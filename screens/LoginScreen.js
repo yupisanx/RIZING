@@ -22,34 +22,63 @@ import {
   ArrowRightIcon,
   ChevronRightIcon,
 } from '../components/Icons';
+import Toast from '../components/Toast';
 
 export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+  const { login, resetPassword } = useAuth();
+
+  const showToast = (message, type = 'success') => {
+    setToast({ visible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, visible: false });
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showToast('Please fill in all fields', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      await login(email, password);
+      const user = await login(email, password);
+      if (!user.emailVerified) {
+        showToast('Please verify your email before logging in', 'error');
+        setLoading(false);
+        return;
+      }
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showToast(error.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      showToast('Please enter your email address', 'error');
+      return;
+    }
+
+    try {
+      await resetPassword(email);
+      showToast('Password reset email sent! Check your inbox', 'success');
+    } catch (error) {
+      showToast(error.message, 'error');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#000000', '#000000', 'rgba(88, 28, 135, 0.3)']}
+        colors={['#000000', '#000000', '#2e1065']}
         style={styles.background}
       />
 
@@ -101,8 +130,10 @@ export default function LoginScreen({ navigation }) {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.forgotPasswordTop}>
-              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+            <TouchableOpacity
+              onPress={handleForgotPassword}
+              style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
           </View>
 
@@ -133,13 +164,10 @@ export default function LoginScreen({ navigation }) {
                 onPress={() => navigation.navigate('Signup')}
                 style={styles.toggleButton}
                 activeOpacity={0.7}>
-                <View style={styles.toggleContent}>
-                  <Text style={styles.toggleText}>
-                    Don't have an account?{' '}
-                    <Text style={styles.toggleHighlight}>Sign Up</Text>
-                  </Text>
-                  <ChevronRightIcon />
-                </View>
+                <Text style={styles.toggleText}>
+                  Don't have an account?{' '}
+                  <Text style={styles.toggleHighlight}>Sign Up</Text>
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -151,6 +179,13 @@ export default function LoginScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }
@@ -180,16 +215,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
     textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#d8b4fe',
-    textAlign: 'center',
+    fontFamily: 'System',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    textShadowColor: '#d8b4fe',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   form: {
     marginBottom: 16,
@@ -228,13 +264,13 @@ const styles = StyleSheet.create({
     right: 12,
     padding: 8,
   },
-  forgotPasswordTop: {
+  forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: 16,
+    marginTop: 8,
   },
   forgotPasswordText: {
-    color: '#c084fc', // purple-400
-    fontSize: 12,
+    color: '#d8b4fe',
+    fontSize: 14,
   },
   actionContainer: {
     marginTop: 8,
@@ -267,10 +303,6 @@ const styles = StyleSheet.create({
   },
   toggleButton: {
     padding: 8,
-  },
-  toggleContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   toggleText: {
     color: '#d8b4fe', // purple-300

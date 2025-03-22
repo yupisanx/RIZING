@@ -4,6 +4,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  updateProfile,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
@@ -28,10 +30,17 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  const signup = async (email, password) => {
+  const signup = async (email, password, username) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      const user = userCredential.user;
+      
+      // Update profile with username
+      await updateProfile(user, {
+        displayName: username
+      });
+      
+      return user;
     } catch (error) {
       throw error;
     }
@@ -54,12 +63,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
     signup,
     login,
     logout,
+    resetPassword,
   };
 
   return (

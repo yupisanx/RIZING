@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { WelcomeProvider, useWelcome } from './contexts/WelcomeContext';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -15,6 +16,8 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
+  const { showingWelcome } = useWelcome();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -28,6 +31,7 @@ function TabNavigator() {
           borderWidth: 1,
           borderColor: 'rgba(216, 180, 254, 0.3)',
           paddingHorizontal: 10,
+          display: showingWelcome ? 'none' : 'flex',
         },
         tabBarActiveTintColor: '#d8b4fe',
         tabBarInactiveTintColor: '#6b7280',
@@ -43,7 +47,7 @@ function TabNavigator() {
         component={HomeScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => <Icons name="home" size={28} color={color} />,
+          tabBarIcon: ({ color }) => <Icons name="plus" size={28} color={color} />,
           tabBarShowLabel: false,
         }}
       />
@@ -91,8 +95,10 @@ function AppNavigator() {
 export default function App() {
   return (
     <AuthProvider>
-      <StatusBar style="light" />
-      <AppNavigator />
+      <WelcomeProvider>
+        <StatusBar style="light" />
+        <AppNavigator />
+      </WelcomeProvider>
     </AuthProvider>
   );
 }

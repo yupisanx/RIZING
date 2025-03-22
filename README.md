@@ -1,89 +1,69 @@
-# Solo Leveling Mobile App
+# Solo Mission Mobile App
 
-A React Native mobile application with Firebase authentication, featuring a beautiful dark theme UI inspired by Solo Leveling.
+A React Native mobile application for tracking personal growth and achievements in an RPG-style interface.
 
 ## Features
 
-- 🔐 Firebase Authentication
-  - Email & Password Sign Up
-  - Email & Password Login
-  - Password Reset
-  - Session Persistence
-- 🎨 Beautiful UI/UX
-  - Dark Theme with Purple Accents
-  - Custom Icons
-  - Gradient Backgrounds
-  - Smooth Animations
-  - Responsive Design
-- 📱 Mobile-First Features
-  - Keyboard Aware Scrolling
-  - Safe Area Support
-  - Cross-Platform (iOS & Android)
-  - Loading States
-  - Error Handling
+- User Authentication (Email/Password)
+- Welcome Sequence for New Users
+- Password Reset Functionality
+- RPG-Style UI/UX
+- Daily Training System
+- Quest Management
 
-## Tech Stack
+## Prerequisites
 
-- React Native
-- Expo
-- Firebase
-- React Navigation
-- Expo Linear Gradient
-- React Native SVG
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or newer)
+- Node.js (v14 or higher)
 - npm or yarn
 - Expo CLI
-- Firebase Account
+- Firebase account and project
 
-### Installation
+## Installation
 
-1. Clone the repository
+1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/solo-leveling-app.git
-cd solo-leveling-app
+git clone [your-repository-url]
+cd [your-project-name]
 ```
 
-2. Install dependencies
+2. Install dependencies:
 ```bash
 npm install
 # or
 yarn install
 ```
 
-3. Create a Firebase project and add your configuration in `config/firebase.js`
+3. Create a Firebase project and add your configuration:
+   - Create a new file `config/firebase.js`
+   - Add your Firebase configuration
 
-4. Start the development server
+4. Start the development server:
 ```bash
-npm start
-# or
-yarn start
+npx expo start
 ```
 
-5. Run on your device or emulator
-- Scan the QR code with Expo Go (Android)
-- Scan the QR code with Camera app (iOS)
-- Press 'a' for Android emulator
-- Press 'i' for iOS simulator
+## Environment Setup
+
+Create a `.env` file in the root directory with the following variables:
+```
+FIREBASE_API_KEY=your_api_key
+FIREBASE_AUTH_DOMAIN=your_auth_domain
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_STORAGE_BUCKET=your_storage_bucket
+FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+FIREBASE_APP_ID=your_app_id
+```
 
 ## Project Structure
 
 ```
-solo-leveling-app/
-├── App.js                # Main application component
-├── components/           # Reusable components
-│   └── Icons.tsx        # SVG icons
-├── config/              # Configuration files
-│   └── firebase.js      # Firebase setup
-├── contexts/            # React contexts
-│   └── AuthContext.js   # Authentication context
-└── screens/             # Application screens
-    ├── LoginScreen.js   # Login screen
-    └── SignupScreen.js  # Signup screen
+src/
+├── components/      # Reusable components
+├── contexts/        # React Context providers
+├── hooks/          # Custom hooks
+├── screens/        # Screen components
+├── config/         # Configuration files
+└── navigation/     # Navigation setup
 ```
 
 ## Contributing
@@ -96,10 +76,4 @@ solo-leveling-app/
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- UI Design inspired by Solo Leveling
-- Icons from Feather Icons
-- Color palette from Tailwind CSS 
+This project is licensed under the MIT License - see the LICENSE file for details 

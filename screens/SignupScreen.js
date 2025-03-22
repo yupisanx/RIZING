@@ -10,7 +10,6 @@ import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,27 +22,45 @@ import {
   ArrowRightIcon,
   ChevronLeftIcon,
 } from '../components/Icons';
+import Toast from '../components/Toast';
 
 export default function SignupScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const { signup } = useAuth();
 
+  const showToast = (message, type = 'success') => {
+    setToast({ visible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, visible: false });
+  };
+
   const handleSignup = async () => {
-    if (!email || !password || !name) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!email || !password || !username) {
+      showToast('Please fill in all fields', 'error');
+      return;
+    }
+
+    if (password.length < 6) {
+      showToast('Password must be at least 6 characters', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      await signup(email, password);
-      // Navigation will be handled by the auth state listener
+      const user = await signup(email, password, username);
+      if (user) {
+        showToast('Account created successfully!', 'success');
+        // The AuthContext will automatically handle navigation when user state changes
+      }
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showToast(error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -52,7 +69,7 @@ export default function SignupScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#000000', '#000000', 'rgba(88, 28, 135, 0.3)']}
+        colors={['#000000', '#000000', '#2e1065']}
         style={styles.background}
       />
 
@@ -68,15 +85,15 @@ export default function SignupScreen({ navigation }) {
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>Username</Text>
               <View style={styles.inputWrapper}>
                 <UserIcon style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your name"
+                  placeholder="Enter your username"
                   placeholderTextColor="#9ca3af"
-                  value={name}
-                  onChangeText={setName}
+                  value={username}
+                  onChangeText={setUsername}
                 />
               </View>
             </View>
@@ -163,6 +180,13 @@ export default function SignupScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }
@@ -192,11 +216,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 36,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
     textAlign: 'center',
+    fontFamily: 'System',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    textShadowColor: '#d8b4fe',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   form: {
     marginBottom: 16,

@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from '
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icons } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
+import MessageModal from '../components/MessageModal';
+import useWelcomeSequence from '../hooks/useWelcomeSequence';
 
 const { width } = Dimensions.get('window');
 
@@ -10,6 +12,12 @@ export default function HomeScreen() {
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
+  const { 
+    currentMessage, 
+    showMessage, 
+    handleNext, 
+    handleAction 
+  } = useWelcomeSequence(user?.uid);
   
   const toggleMenu = () => {
     const toValue = menuVisible ? width : 0;
@@ -22,6 +30,14 @@ export default function HomeScreen() {
     }).start();
   };
 
+  const handleMessageInteraction = () => {
+    if (currentMessage?.type === 'CONFIRM') {
+      // Confirm messages are handled by the buttons
+      return;
+    }
+    handleNext();
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -31,75 +47,93 @@ export default function HomeScreen() {
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Icons name="bell" size={28} color="#d8b4fe" />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.menuButton}
-          onPress={toggleMenu}>
-          <Icons name="menu" size={28} color="#d8b4fe" />
-        </TouchableOpacity>
-      </View>
+      
+      {/* Only show header and content when not showing welcome message */}
+      {!showMessage && (
+        <>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.iconButton}>
+              <Icons name="mail" size={28} color="#d8b4fe" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.menuButton}
+              onPress={toggleMenu}>
+              <Icons name="menu" size={28} color="#d8b4fe" />
+            </TouchableOpacity>
+          </View>
 
-      {/* Sliding Menu */}
-      {menuVisible && (
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={toggleMenu}
+          {/* Sliding Menu */}
+          {menuVisible && (
+            <TouchableOpacity
+              style={styles.overlay}
+              activeOpacity={1}
+              onPress={toggleMenu}
+            />
+          )}
+          <Animated.View
+            style={[
+              styles.menuContainer,
+              {
+                transform: [{ translateX: slideAnim }]
+              }
+            ]}>
+            <View style={styles.menuContent}>
+              <View style={styles.menuHeader}>
+                <Icons name="user" size={24} color="#d8b4fe" />
+                <Text style={styles.menuEmail}>{user?.email}</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  toggleMenu();
+                  logout();
+                }}>
+                <Icons name="log-out" size={20} color="#d8b4fe" />
+                <Text style={styles.menuItemText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
+          <View style={styles.trainingCard}>
+            <View style={styles.dotContainer}>
+              <View style={[styles.dot, { backgroundColor: '#d8b4fe' }]} />
+              <View style={[styles.dot, { backgroundColor: 'rgba(216, 180, 254, 0.3)' }]} />
+              <View style={[styles.dot, { backgroundColor: 'rgba(216, 180, 254, 0.3)' }]} />
+              <View style={[styles.dot, { backgroundColor: 'rgba(216, 180, 254, 0.3)' }]} />
+            </View>
+            <Text style={styles.cardTitle}>Daily Training</Text>
+            <Text style={styles.cardSubtitle}>no quests available</Text>
+            <View style={styles.progressCircle}>
+              <Text style={styles.progressText}>-</Text>
+            </View>
+          </View>
+
+          <View style={styles.questCard}>
+            <View style={styles.questHeader}>
+              <Icons name="info" size={24} color="#d8b4fe" />
+              <Text style={styles.questTitle}>DAILY QUEST</Text>
+            </View>
+            <Text style={styles.questInstructions}>
+              [Click below to generate your quest.]
+            </Text>
+            <TouchableOpacity style={styles.addButton}>
+              <Icons name="plus" size={24} color="#000000" />
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {/* Message Modal */}
+      {showMessage && (
+        <MessageModal
+          visible={showMessage}
+          message={currentMessage?.message || ''}
+          type={currentMessage?.type || 'INFO'}
+          highlightWords={currentMessage?.highlightWords || []}
+          onAction={handleAction}
+          onClose={handleMessageInteraction}
         />
       )}
-      <Animated.View
-        style={[
-          styles.menuContainer,
-          {
-            transform: [{ translateX: slideAnim }]
-          }
-        ]}>
-        <View style={styles.menuContent}>
-          <View style={styles.menuHeader}>
-            <Icons name="user" size={24} color="#d8b4fe" />
-            <Text style={styles.menuEmail}>{user?.email}</Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => {
-              toggleMenu();
-              logout();
-            }}>
-            <Icons name="log-out" size={20} color="#d8b4fe" />
-            <Text style={styles.menuItemText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-
-      <View style={styles.trainingCard}>
-        <View style={styles.dotContainer}>
-          <View style={[styles.dot, { backgroundColor: '#d8b4fe' }]} />
-          <View style={[styles.dot, { backgroundColor: 'rgba(216, 180, 254, 0.3)' }]} />
-          <View style={[styles.dot, { backgroundColor: 'rgba(216, 180, 254, 0.3)' }]} />
-          <View style={[styles.dot, { backgroundColor: 'rgba(216, 180, 254, 0.3)' }]} />
-        </View>
-        <Text style={styles.cardTitle}>Daily Training</Text>
-        <Text style={styles.cardSubtitle}>no quests available</Text>
-        <View style={styles.progressCircle}>
-          <Text style={styles.progressText}>-</Text>
-        </View>
-      </View>
-
-      <View style={styles.questCard}>
-        <View style={styles.questHeader}>
-          <Icons name="info" size={24} color="#d8b4fe" />
-          <Text style={styles.questTitle}>DAILY QUEST</Text>
-        </View>
-        <Text style={styles.questInstructions}>
-          [Click below to generate your quest.]
-        </Text>
-        <TouchableOpacity style={styles.addButton}>
-          <Icons name="plus" size={24} color="#000000" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }

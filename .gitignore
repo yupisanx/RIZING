@@ -91,3 +91,6 @@ yarn-error.log
 .env
 .env.*
 !.env.example
+
+# Temporary files created by Metro
+.metro-health-check*
