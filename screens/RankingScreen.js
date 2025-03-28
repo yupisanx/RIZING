@@ -6,11 +6,11 @@ import { Icons } from '../components/Icons';
 
 const { width } = Dimensions.get('window');
 
-export default function ProfileScreen() {
+export default function RankingScreen() {
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
-
+  
   const toggleMenu = () => {
     const toValue = menuVisible ? width : 0;
     setMenuVisible(!menuVisible);
@@ -31,7 +31,6 @@ export default function ProfileScreen() {
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconButton}>
           <Icons name="mail" size={28} color="#d8b4fe" />
@@ -79,7 +78,7 @@ export default function ProfileScreen() {
       </Animated.View>
 
       <View style={styles.content}>
-        <Text style={styles.text}>Profile Screen</Text>
+        <Text style={styles.text}>Ranking Screen</Text>
       </View>
     </View>
   );
@@ -143,6 +142,9 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(216, 180, 254, 0.1)',
     marginBottom: 20,
   },
+  userInfo: {
+    marginLeft: 12,
+  },
   menuUsername: {
     color: '#d8b4fe',
     fontSize: 16,
@@ -164,4 +166,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 12,
   },
-});
+}); 

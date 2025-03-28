@@ -1,12 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icons } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
+import { theme } from '../utils/theme';
+import { isTablet, isDesktop, getContainerWidth, platformSelect } from '../utils/responsive';
 
 const { width } = Dimensions.get('window');
 
-export default function TrainingScreen() {
+export default function QuestScreen() {
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
@@ -33,12 +35,12 @@ export default function TrainingScreen() {
       />
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconButton}>
-          <Icons name="mail" size={28} color="#d8b4fe" />
+          <Icons name="mail" size={isTablet ? 32 : 28} color={theme.colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.menuButton}
           onPress={toggleMenu}>
-          <Icons name="menu" size={28} color="#d8b4fe" />
+          <Icons name="menu" size={isTablet ? 32 : 28} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -54,13 +56,17 @@ export default function TrainingScreen() {
         style={[
           styles.menuContainer,
           {
-            transform: [{ translateX: slideAnim }]
+            transform: [{ translateX: slideAnim }],
+            width: isTablet ? width * 0.5 : width * 0.75,
           }
         ]}>
         <View style={styles.menuContent}>
           <View style={styles.menuHeader}>
-            <Icons name="user" size={24} color="#d8b4fe" />
-            <Text style={styles.menuEmail}>{user?.email}</Text>
+            <Icons name="user" size={isTablet ? 28 : 24} color={theme.colors.primary} />
+            <View style={styles.userInfo}>
+              <Text style={styles.menuUsername}>{user?.displayName || 'User'}</Text>
+              <Text style={styles.menuEmail}>{user?.email}</Text>
+            </View>
           </View>
           <TouchableOpacity 
             style={styles.menuItem}
@@ -68,14 +74,14 @@ export default function TrainingScreen() {
               toggleMenu();
               logout();
             }}>
-            <Icons name="log-out" size={20} color="#d8b4fe" />
+            <Icons name="log-out" size={isTablet ? 24 : 20} color={theme.colors.primary} />
             <Text style={styles.menuItemText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
       <View style={styles.content}>
-        <Text style={styles.text}>Training Screen</Text>
+        <Text style={styles.text}>Quest Screen</Text>
       </View>
     </View>
   );
@@ -84,72 +90,85 @@ export default function TrainingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    ...theme.layout.container,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginBottom: 30,
-    marginTop: 60,
+    paddingTop: 50,
+    paddingBottom: 20,
+    marginBottom: 10,
   },
   iconButton: {
-    padding: 10,
+    padding: theme.spacing.md,
   },
   menuButton: {
-    padding: 10,
+    padding: theme.spacing.md,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: theme.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
-    color: '#d8b4fe',
-    fontSize: 18,
+    ...theme.typography.h1,
+    color: theme.colors.text.primary,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     zIndex: 1,
   },
   menuContainer: {
     position: 'absolute',
     top: 0,
     right: 0,
-    width: width * 0.75,
     height: '100%',
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.background,
     borderLeftWidth: 1,
-    borderLeftColor: 'rgba(216, 180, 254, 0.3)',
+    borderLeftColor: theme.colors.border,
     zIndex: 2,
     elevation: 5,
   },
   menuContent: {
-    padding: 20,
-    marginTop: 60,
+    padding: theme.spacing.xl,
+    marginTop: platformSelect({
+      ios: theme.spacing.xxl,
+      android: theme.spacing.xl,
+      default: theme.spacing.xxl,
+    }),
   },
   menuHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: theme.spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(216, 180, 254, 0.1)',
-    marginBottom: 20,
+    borderBottomColor: theme.colors.border,
+    marginBottom: theme.spacing.xl,
+  },
+  userInfo: {
+    marginLeft: theme.spacing.md,
+  },
+  menuUsername: {
+    ...theme.typography.h3,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.xs,
   },
   menuEmail: {
-    color: '#d8b4fe',
-    fontSize: 14,
-    marginLeft: 12,
+    ...theme.typography.caption,
+    color: theme.colors.primary,
+    opacity: 0.8,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: theme.spacing.lg,
   },
   menuItemText: {
-    color: '#d8b4fe',
-    fontSize: 16,
-    marginLeft: 12,
+    ...theme.typography.body,
+    color: theme.colors.primary,
+    marginLeft: theme.spacing.md,
   },
 }); 

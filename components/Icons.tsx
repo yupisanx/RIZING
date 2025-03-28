@@ -62,6 +62,52 @@ export const Icons = ({ name, size = 16, color = "#c084fc", ...props }) => {
           <Line x1="5" y1="12" x2="19" y2="12" />
         </Svg>
       );
+    case 'users':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <Circle cx="9" cy="7" r="4" />
+          <Path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <Path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </Svg>
+      );
+    case 'message':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </Svg>
+      );
+    case 'book':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
+          <Path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
+        </Svg>
+      );
+    case 'box':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          <Path d="M3.27 6.96L12 12.01l8.73-5.05" />
+          <Line x1="12" y1="22.08" x2="12" y2="12" />
+        </Svg>
+      );
+    case 'shopping-bag':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <Line x1="3" y1="6" x2="21" y2="6" />
+          <Path d="M16 10a4 4 0 01-8 0" />
+        </Svg>
+      );
+    case 'ranking':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+          <Path d="M18 20V10" />
+          <Path d="M12 20V4" />
+          <Path d="M6 20V14" />
+        </Svg>
+      );
     default:
       return null;
   }

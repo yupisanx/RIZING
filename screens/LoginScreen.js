@@ -8,185 +8,149 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  SafeAreaView,
-  ActivityIndicator,
-  Alert,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  MailIcon,
-  LockIcon,
-  EyeIcon,
-  EyeOffIcon,
-  ArrowRightIcon,
-  ChevronRightIcon,
-} from '../components/Icons';
-import Toast from '../components/Toast';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }) {
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   const { login, resetPassword } = useAuth();
 
-  const showToast = (message, type = 'success') => {
-    setToast({ visible: true, message, type });
-  };
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
 
-  const hideToast = () => {
-    setToast({ ...toast, visible: false });
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      showToast('Please fill in all fields', 'error');
-      return;
-    }
+    if (!validateForm()) return;
 
-    setLoading(true);
     try {
-      const user = await login(email, password);
-      if (!user.emailVerified) {
-        showToast('Please verify your email before logging in', 'error');
-        setLoading(false);
-        return;
-      }
+      await login(email, password);
     } catch (error) {
-      showToast(error.message, 'error');
-    } finally {
-      setLoading(false);
+      setErrors({ submit: 'Invalid email or password' });
     }
   };
 
   const handleForgotPassword = async () => {
     if (!email) {
-      showToast('Please enter your email address', 'error');
+      setErrors({ email: 'Please enter your email address' });
       return;
     }
-
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setErrors({ email: 'Please enter a valid email' });
+      return;
+    }
     try {
       await resetPassword(email);
-      showToast('Password reset email sent! Check your inbox', 'success');
+      alert('Password reset email sent! Check your inbox.');
     } catch (error) {
-      showToast(error.message, 'error');
+      setErrors({ submit: 'Failed to send reset email. Please try again.' });
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
       <LinearGradient
         colors={['#000000', '#000000', '#2e1065']}
         style={styles.background}
       />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Welcome back</Text>
-          </View>
-
-          {/* Form */}
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputWrapper}>
-                <MailIcon style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#9ca3af"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
-            </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.contentContainer}>
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Welcome Back</Text>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.inputWrapper}>
-                <LockIcon style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, errors.email && styles.inputError]}
+                placeholder="Email"
+                placeholderTextColor="#6b7280"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setErrors({ ...errors, email: null });
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+              
+              <View style={styles.passwordContainer}>
                 <TextInput
-                  style={styles.input}
-                  placeholder="Enter your password"
-                  placeholderTextColor="#9ca3af"
-                  secureTextEntry={!showPassword}
+                  style={[styles.input, styles.passwordInput, errors.password && styles.inputError]}
+                  placeholder="Password"
+                  placeholderTextColor="#6b7280"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setErrors({ ...errors, password: null });
+                  }}
+                  secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
-                  activeOpacity={0.7}>
-                  {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye' : 'eye-off'}
+                    size={24}
+                    color="#6b7280"
+                  />
                 </TouchableOpacity>
               </View>
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             <TouchableOpacity
+              style={styles.forgotPassword}
               onPress={handleForgotPassword}
-              style={styles.forgotPassword}>
+            >
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
-          </View>
 
-          <View style={styles.actionContainer}>
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.8}>
-              <LinearGradient
-                colors={['#7e22ce', '#a855f7']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.buttonGradient}>
-                {loading ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <View style={styles.buttonContent}>
-                    <Text style={styles.buttonText}>Sign In</Text>
-                    <ArrowRightIcon />
-                  </View>
-                )}
-              </LinearGradient>
+            {errors.submit && (
+              <Text style={[styles.errorText, styles.submitError]}>
+                {errors.submit}
+              </Text>
+            )}
+
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+              <Text style={styles.loginButtonText}>Sign In</Text>
             </TouchableOpacity>
 
-            <View style={styles.toggleContainer}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Signup')}
-                style={styles.toggleButton}
-                activeOpacity={0.7}>
-                <Text style={styles.toggleText}>
-                  Don't have an account?{' '}
-                  <Text style={styles.toggleHighlight}>Sign Up</Text>
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.signupLink}
+              onPress={() => navigation.navigate('Signup')}
+            >
+              <Text style={styles.signupText}>
+                Don't have an account? <Text style={styles.signupTextBold}>Sign Up</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <View style={styles.divider} />
-            <Text style={styles.footerText}>"I alone level up"</Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
-    </SafeAreaView>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -202,128 +166,117 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
   },
-  keyboardAvoid: {
-    flex: 1,
-  },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    justifyContent: 'center',
   },
-  header: {
-    marginTop: 32,
-    marginBottom: 32,
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#000000',
+    borderRadius: 15,
+    padding: 30,
+    borderWidth: 1,
+    borderColor: 'rgba(216, 180, 254, 0.5)',
+    shadowColor: '#d8b4fe',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 8,
+    color: '#ffffff',
     textAlign: 'center',
-    fontFamily: 'System',
+    marginBottom: 25,
     textTransform: 'uppercase',
     letterSpacing: 2,
     textShadowColor: '#d8b4fe',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
-  form: {
-    marginBottom: 16,
-  },
   inputContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    color: '#d8b4fe', // purple-300
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(88, 28, 135, 0.5)', // purple-900/50
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // black/50
-    height: 50,
-    position: 'relative',
+    width: '100%',
+    marginBottom: 15,
   },
   input: {
-    flex: 1,
-    color: 'white',
-    paddingLeft: 40,
-    paddingRight: 40,
-    height: '100%',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(216, 180, 254, 0.2)',
+    fontSize: 16,
   },
-  inputIcon: {
-    position: 'absolute',
-    left: 12,
+  passwordContainer: {
+    position: 'relative',
+    marginBottom: 5,
+  },
+  passwordInput: {
+    marginBottom: 0,
   },
   eyeIcon: {
     position: 'absolute',
     right: 12,
-    padding: 8,
+    top: 12,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginTop: 8,
+    marginBottom: 15,
+    marginTop: -5,
   },
   forgotPasswordText: {
     color: '#d8b4fe',
     fontSize: 14,
   },
-  actionContainer: {
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  submitButton: {
-    height: 56,
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  buttonGradient: {
-    flex: 1,
-    justifyContent: 'center',
+  loginButton: {
+    backgroundColor: '#d8b4fe',
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
+    marginTop: 0,
   },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: '600',
+  loginButtonText: {
+    color: '#000000',
     fontSize: 16,
-    marginRight: 8,
+    fontWeight: 'bold',
   },
-  toggleContainer: {
+  signupLink: {
+    marginTop: 20,
     alignItems: 'center',
-    marginTop: 4,
   },
-  toggleButton: {
-    padding: 8,
-  },
-  toggleText: {
-    color: '#d8b4fe', // purple-300
+  signupText: {
+    color: '#6b7280',
     fontSize: 14,
   },
-  toggleHighlight: {
-    color: '#c084fc', // purple-400
+  signupTextBold: {
+    color: '#d8b4fe',
+    fontWeight: 'bold',
   },
-  footer: {
-    marginTop: 'auto',
-    alignItems: 'center',
+  inputError: {
+    borderColor: '#ff0000',
   },
-  divider: {
-    height: 1,
-    width: '100%',
-    backgroundColor: '#a855f7', // purple-500
-    opacity: 0.3,
-    marginBottom: 24,
-  },
-  footerText: {
-    color: 'rgba(192, 132, 252, 0.6)', // purple-400/60
+  errorText: {
+    color: '#ff0000',
     fontSize: 12,
+    marginTop: 5,
+  },
+  submitError: {
+    textAlign: 'left',
+    marginBottom: 15,
+    fontSize: 14,
+    marginLeft: 5,
+    marginTop: 0,
   },
 }); 

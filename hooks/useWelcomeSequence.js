@@ -57,32 +57,23 @@ export const useWelcomeSequence = (userId) => {
     if (!userId) return;
 
     try {
-      // Check AsyncStorage first
-      const hasSeenWelcome = await AsyncStorage.getItem(`${WELCOME_SHOWN_KEY}_${userId}`);
-      
-      if (hasSeenWelcome === 'true') {
-        setHasInitialized(true);
-        return;
-      }
-
-      // If user hasn't seen welcome, show it
-      setCurrentMessageIndex(0);
-      setShowMessage(true);
-      setHasInitialized(true);
+      // Always mark as not first time user
+      await AsyncStorage.setItem(`${WELCOME_SHOWN_KEY}_${userId}`, 'true');
       
       // Try to sync with Firebase in background
       try {
-        const userDoc = await getDoc(doc(db, 'users', userId));
-        if (userDoc.exists() && userDoc.data()?.isFirstTime === false) {
-          await AsyncStorage.setItem(`${WELCOME_SHOWN_KEY}_${userId}`, 'true');
-        }
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+          isFirstTime: false,
+        });
       } catch (firebaseError) {
-        // Continue with local storage if Firebase fails
-        console.log('Firebase sync failed, using local storage only');
+        // Continue if Firebase fails
+        console.log('Firebase update failed, saved locally only');
       }
+      
+      setHasInitialized(true);
     } catch (error) {
-      console.log('Storage error, showing welcome sequence by default');
-      setShowMessage(true);
+      console.log('Failed to save welcome status');
       setHasInitialized(true);
     }
   };

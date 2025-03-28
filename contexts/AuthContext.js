@@ -7,7 +7,8 @@ import {
   sendPasswordResetEmail,
   updateProfile,
 } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
 
 const AuthContext = createContext({});
 
@@ -16,13 +17,36 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
+        try {
+          // Check if user has completed onboarding
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setHasCompletedOnboarding(!!userData.profile?.goal);
+          } else {
+            // If user document doesn't exist, create it with initial data
+            await setDoc(doc(db, 'users', user.uid), {
+              username: user.displayName || 'test_user',
+              email: user.email,
+              createdAt: serverTimestamp(),
+              isFirstTime: true,
+              lastUpdated: serverTimestamp()
+            });
+            setHasCompletedOnboarding(false);
+          }
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
+          setHasCompletedOnboarding(false);
+        }
       } else {
         setUser(null);
+        setHasCompletedOnboarding(false);
       }
       setLoading(false);
     });
@@ -38,6 +62,15 @@ export const AuthProvider = ({ children }) => {
       // Update profile with username
       await updateProfile(user, {
         displayName: username
+      });
+      
+      // Store additional user data in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        username: username,
+        email: email,
+        createdAt: serverTimestamp(),
+        isFirstTime: true,
+        lastUpdated: serverTimestamp()
       });
       
       return user;
@@ -74,6 +107,11 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+    hasCompletedOnboarding,
+    setHasCompletedOnboarding: (value) => {
+      console.log('Setting hasCompletedOnboarding to:', value);
+      setHasCompletedOnboarding(value);
+    },
     signup,
     login,
     logout,

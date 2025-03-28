@@ -80,7 +80,10 @@ export default function HomeScreen() {
             <View style={styles.menuContent}>
               <View style={styles.menuHeader}>
                 <Icons name="user" size={24} color="#d8b4fe" />
-                <Text style={styles.menuEmail}>{user?.email}</Text>
+                <View style={styles.userInfo}>
+                  <Text style={styles.menuUsername}>{user?.displayName || 'User'}</Text>
+                  <Text style={styles.menuEmail}>{user?.email}</Text>
+                </View>
               </View>
               <TouchableOpacity 
                 style={styles.menuItem}
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     marginBottom: 30,
-    marginTop: 60,
+    marginTop: 30,
   },
   iconButton: {
     padding: 10,
@@ -184,10 +187,17 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(216, 180, 254, 0.1)',
     marginBottom: 20,
   },
+  userInfo: {
+    marginLeft: 12,
+  },
+  menuUsername: {
+    color: '#d8b4fe',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   menuEmail: {
     color: '#d8b4fe',
     fontSize: 14,
-    marginLeft: 12,
   },
   menuItem: {
     flexDirection: 'row',
