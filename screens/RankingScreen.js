@@ -1,11 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { Icons } from '../components/Icons';
 import MessageModal from '../components/MessageModal';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+const HEADER_HEIGHT = 90;
+const STATUS_BAR_HEIGHT = Platform.select({
+  ios: 0,
+  android: 24,
+});
 
 export default function RankingScreen() {
   const { user, logout } = useAuth();
@@ -36,12 +41,16 @@ export default function RankingScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.iconButton}
-          onPress={() => setShowMessageModal(true)}>
+          onPress={() => setShowMessageModal(true)}
+          accessibilityLabel="Open messages"
+        >
           <Icons name="mail" size={28} color="#d8b4fe" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.menuButton}
-          onPress={toggleMenu}>
+          onPress={toggleMenu}
+          accessibilityLabel="Open menu"
+        >
           <Icons name="menu" size={28} color="#d8b4fe" />
         </TouchableOpacity>
       </View>
@@ -58,7 +67,8 @@ export default function RankingScreen() {
         style={[
           styles.menuContainer,
           {
-            transform: [{ translateX: slideAnim }]
+            transform: [{ translateX: slideAnim }],
+            width: width * 0.75
           }
         ]}>
         <View style={styles.menuContent}>
@@ -74,18 +84,30 @@ export default function RankingScreen() {
             onPress={() => {
               toggleMenu();
               logout();
-            }}>
+            }}
+            accessibilityLabel="Logout"
+          >
             <Icons name="log-out" size={20} color="#d8b4fe" />
             <Text style={styles.menuItemText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
-      <View style={styles.content}>
-        <Text style={styles.text}>Ranking Screen</Text>
-      </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        decelerationRate="normal"
+      >
+        <View style={[styles.mainContent, { minHeight: height * 0.8, marginTop: Platform.OS === 'android' ? -STATUS_BAR_HEIGHT : 0 }]}>
+          <View style={styles.content}>
+            <Text style={styles.text}>Ranking Screen</Text>
+          </View>
+        </View>
+        <View style={[styles.extraSpace, { height: height * 0.2 }]} />
+      </ScrollView>
 
-      {/* Mail Message Modal */}
       <MessageModal
         visible={showMessageModal}
         onClose={() => setShowMessageModal(false)}
@@ -175,5 +197,20 @@ const styles = StyleSheet.create({
     color: '#d8b4fe',
     fontSize: 16,
     marginLeft: 12,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
+  },
+  mainContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  extraSpace: {
+    width: '100%',
   },
 }); 

@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity, Animated } from 'react-native';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity, Animated, ScrollView, Platform, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -7,18 +8,40 @@ import { Icons } from '../components/Icons';
 import { useNavigation } from '@react-navigation/native';
 import MessageModal from '../components/MessageModal';
 
-const { width } = Dimensions.get('window');
+const SCREEN_PADDING = 20;
+const HEADER_HEIGHT = 90;
+const STATUS_BAR_HEIGHT = Platform.select({
+  ios: 0,
+  android: 24,
+});
 
 export default function ProfileScreen() {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const AVATAR_HEIGHT = width * 1.26;
+
+  // Calculate responsive avatar margin
+  const avatarMarginTop = useMemo(() => {
+    const baseMargin = Platform.OS === 'ios' ? -280 : -height * 0.35;
+    const deviceScale = height / 844; // iPhone 14 Pro height as reference
+    return baseMargin * deviceScale;
+  }, [height]);
+
   const { user, logout } = useAuth();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
   const navigation = useNavigation();
 
-  const toggleMenu = () => {
+  // Initialize animation value
+  useEffect(() => {
+    slideAnim.setValue(width);
+  }, [width]);
+
+  const toggleMenu = useCallback(() => {
     const toValue = menuVisible ? width : 0;
     setMenuVisible(!menuVisible);
     Animated.spring(slideAnim, {
@@ -27,28 +50,45 @@ export default function ProfileScreen() {
       tension: 65,
       friction: 11
     }).start();
-  };
+  }, [menuVisible, slideAnim, width]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchUserData = async () => {
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            setUserData(userDoc.data());
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        } finally {
+      if (!user?.uid) return;
+
+      try {
+        setError(null);
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        
+        if (!isMounted) return;
+
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUserData(data);
+        } else {
+          setError('User data not found');
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Error fetching user data:', error);
+        setError('Failed to load user data');
+      } finally {
+        if (isMounted) {
           setLoading(false);
         }
       }
     };
 
     fetchUserData();
-  }, [user]);
 
-  if (loading || !userData) {
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.uid]);
+
+  if (loading) {
     return (
       <View style={styles.container}>
         <Text style={styles.loadingText}>Loading...</Text>
@@ -56,11 +96,25 @@ export default function ProfileScreen() {
     );
   }
 
-  const calculateLevelProgress = () => {
-    const xpForNextLevel = (userData.level + 1) * 1000;
-    const progress = (userData.xp / xpForNextLevel) * 100;
-    return `${Math.min(progress, 100)}%`;
-  };
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={[styles.loadingText, styles.errorText]}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>No user data available</Text>
+      </View>
+    );
+  }
+
+  const avatarSource = userData.gender === 'male' 
+    ? require('../assets/avatars/male-avatar.png')
+    : require('../assets/avatars/female-avatar.png');
 
   return (
     <View style={styles.container}>
@@ -68,22 +122,18 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.iconButton}
-          onPress={() => setShowMessageModal(true)}>
+          onPress={() => setShowMessageModal(true)}
+          accessibilityLabel="Open messages"
+        >
           <Icons name="mail" size={28} color="#d8b4fe" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.menuButton}
-          onPress={toggleMenu}>
+          onPress={toggleMenu}
+          accessibilityLabel="Open menu"
+        >
           <Icons name="menu" size={28} color="#d8b4fe" />
         </TouchableOpacity>
-      </View>
-
-      {/* Level Bar */}
-      <View style={styles.levelContainer}>
-        <Text style={styles.levelText}>Lv. {userData.level}</Text>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: calculateLevelProgress() }]} />
-        </View>
       </View>
 
       {/* Sliding Menu */}
@@ -98,7 +148,8 @@ export default function ProfileScreen() {
         style={[
           styles.menuContainer,
           {
-            transform: [{ translateX: slideAnim }]
+            transform: [{ translateX: slideAnim }],
+            width: width * 0.75
           }
         ]}>
         <View style={styles.menuContent}>
@@ -114,26 +165,34 @@ export default function ProfileScreen() {
             onPress={() => {
               toggleMenu();
               logout();
-            }}>
+            }}
+            accessibilityLabel="Logout"
+          >
             <Icons name="log-out" size={20} color="#d8b4fe" />
             <Text style={styles.menuItemText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
-      <View style={styles.mainContent}>
-        {/* Avatar */}
-        <Image
-          source={userData.gender === 'male' 
-            ? require('../assets/avatars/male-avatar.png')
-            : require('../assets/avatars/female-avatar.png')
-          }
-          style={styles.avatar}
-          resizeMode="contain"
-        />
-      </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        decelerationRate="normal"
+      >
+        <View style={[styles.mainContent, { minHeight: height * 0.8, marginTop: Platform.OS === 'android' ? -STATUS_BAR_HEIGHT : 0 }]}>
+          <Image
+            source={avatarSource}
+            style={[styles.avatar, { width, height: AVATAR_HEIGHT, marginTop: avatarMarginTop }]}
+            resizeMode="contain"
+            accessibilityLabel={`${userData.gender} avatar`}
+          />
+        </View>
 
-      {/* Mail Message Modal */}
+        <View style={[styles.extraSpace, { height: height * 0.2 }]} />
+      </ScrollView>
+
       <MessageModal
         visible={showMessageModal}
         onClose={() => setShowMessageModal(false)}
@@ -153,7 +212,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 20,
-    marginBottom: -40,
+    marginBottom: 10,
   },
   iconButton: {
     padding: 12,
@@ -167,32 +226,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 50,
   },
-  levelContainer: {
-    position: 'absolute',
-    top: 100,
-    left: 0,
-    right: 0,
-    paddingVertical: 2,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    zIndex: 1,
+  scrollView: {
+    flex: 1,
   },
-  levelText: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 4,
-    width: '50%',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#d8b4fe',
-    borderRadius: 4,
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
   },
   mainContent: {
     flex: 1,
@@ -200,9 +239,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatar: {
-    width: width * 1.0,
-    height: width * 1.26,
-    marginTop: -120,
+    resizeMode: 'contain',
+  },
+  extraSpace: {
+    width: '100%',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -213,7 +253,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    width: width * 0.75,
     height: '100%',
     backgroundColor: '#000000',
     borderLeftWidth: 1,
@@ -256,5 +295,8 @@ const styles = StyleSheet.create({
     color: '#d8b4fe',
     fontSize: 16,
     marginLeft: 12,
-  }
+  },
+  errorText: {
+    color: '#ff6b6b',
+  },
 });

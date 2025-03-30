@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, ScrollView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icons } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,7 +8,12 @@ import { isTablet, isDesktop, getContainerWidth, platformSelect } from '../utils
 import NeonModal from '../components/NeonModal';
 import MessageModal from '../components/MessageModal';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+const HEADER_HEIGHT = 90;
+const STATUS_BAR_HEIGHT = Platform.select({
+  ios: 0,
+  android: 24,
+});
 
 export default function QuestScreen() {
   const { user, logout } = useAuth();
@@ -52,13 +57,17 @@ export default function QuestScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.iconButton}
-          onPress={() => setShowMessageModal(true)}>
-          <Icons name="mail" size={isTablet ? 32 : 28} color={theme.colors.primary} />
+          onPress={() => setShowMessageModal(true)}
+          accessibilityLabel="Open messages"
+        >
+          <Icons name="mail" size={28} color="#d8b4fe" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.menuButton}
-          onPress={toggleMenu}>
-          <Icons name="menu" size={isTablet ? 32 : 28} color={theme.colors.primary} />
+          onPress={toggleMenu}
+          accessibilityLabel="Open menu"
+        >
+          <Icons name="menu" size={28} color="#d8b4fe" />
         </TouchableOpacity>
       </View>
 
@@ -75,12 +84,12 @@ export default function QuestScreen() {
           styles.menuContainer,
           {
             transform: [{ translateX: slideAnim }],
-            width: isTablet ? width * 0.5 : width * 0.75,
+            width: width * 0.75
           }
         ]}>
         <View style={styles.menuContent}>
           <View style={styles.menuHeader}>
-            <Icons name="user" size={isTablet ? 28 : 24} color={theme.colors.primary} />
+            <Icons name="user" size={24} color="#d8b4fe" />
             <View style={styles.userInfo}>
               <Text style={styles.menuUsername}>{user?.displayName || 'User'}</Text>
               <Text style={styles.menuEmail}>{user?.email}</Text>
@@ -91,16 +100,29 @@ export default function QuestScreen() {
             onPress={() => {
               toggleMenu();
               logout();
-            }}>
-            <Icons name="log-out" size={isTablet ? 24 : 20} color={theme.colors.primary} />
+            }}
+            accessibilityLabel="Logout"
+          >
+            <Icons name="log-out" size={20} color="#d8b4fe" />
             <Text style={styles.menuItemText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
-      <View style={styles.content}>
-        <Text style={styles.text}>Quest Screen</Text>
-      </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        decelerationRate="normal"
+      >
+        <View style={[styles.mainContent, { minHeight: height * 0.8, marginTop: Platform.OS === 'android' ? -STATUS_BAR_HEIGHT : 0 }]}>
+          <View style={styles.content}>
+            <Text style={styles.text}>Quest Screen</Text>
+          </View>
+        </View>
+        <View style={[styles.extraSpace, { height: height * 0.2 }]} />
+      </ScrollView>
 
       <NeonModal
         isVisible={questModalVisible}
@@ -203,5 +225,20 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.primary,
     marginLeft: theme.spacing.md,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
+  },
+  mainContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  extraSpace: {
+    width: '100%',
   },
 }); 
