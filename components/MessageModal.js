@@ -1,69 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, Animated, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
+const NEON_COLOR = '#8a2be2'; // Blueviolet
+const SHADOW_COLOR = 'rgba(138,43,226,0.8)';
 
-const MessageModal = ({ visible, message, type, onClose, onAction, highlightWords = [] }) => {
+const MessageModal = ({ visible, onClose }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [textIndex, setTextIndex] = useState(0);
-  const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      // Reset states
-      setTextIndex(0);
-      setDisplayedText('');
-      setIsTyping(true);
-      // Fade in animation
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 500,
         useNativeDriver: true,
       }).start();
     }
-  }, [visible, message]);
-
-  useEffect(() => {
-    if (isTyping && textIndex < message.length) {
-      const timer = setTimeout(() => {
-        setDisplayedText(prev => prev + message[textIndex]);
-        setTextIndex(prev => prev + 1);
-      }, 50);
-      return () => clearTimeout(timer);
-    } else if (isTyping && textIndex >= message.length) {
-      setIsTyping(false);
-    }
-  }, [textIndex, message, isTyping]);
-
-  const handlePress = () => {
-    if (isTyping) {
-      // If still typing, show full message immediately
-      setDisplayedText(message);
-      setTextIndex(message.length);
-      setIsTyping(false);
-    } else if (type !== 'CONFIRM') {
-      // If not typing and not a confirm message, go to next
-      onClose();
-    }
-  };
-
-  const highlightText = (text) => {
-    let highlighted = text;
-    highlightWords.forEach(word => {
-      const regex = new RegExp(`(${word})`, 'g');
-      highlighted = highlighted.replace(regex, `|^|$1|^|`);
-    });
-    
-    return highlighted.split('|^|').map((part, index) => (
-      highlightWords.includes(part) ? (
-        <Text key={index} style={styles.highlightedText}>{part}</Text>
-      ) : (
-        <Text key={index}>{part}</Text>
-      )
-    ));
-  };
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -72,41 +26,29 @@ const MessageModal = ({ visible, message, type, onClose, onAction, highlightWord
       <TouchableOpacity 
         style={styles.touchableArea}
         activeOpacity={1}
-        onPress={handlePress}
+        onPress={onClose}
       >
         <Animated.View style={[styles.modalContainer, { opacity: fadeAnim }]}>
-          <LinearGradient
-            colors={['#000000', '#000000', '#2e1065']}
-            locations={[0, 0.7, 1]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gradientBackground}
-          />
-          <View style={styles.iconContainer}>
-            <Text style={styles.infoText}>i</Text>
-            <Text style={styles.infoLabel}>INFO</Text>
-          </View>
-          <View style={styles.messageContainer}>
-            <Text style={styles.messageText}>
-              {highlightText(displayedText)}
-            </Text>
-          </View>
-          {type === 'CONFIRM' && !isTyping && (
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity 
-                style={styles.button} 
-                onPress={() => onAction(true)}
-              >
-                <Text style={styles.buttonText}>YES</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.button} 
-                onPress={() => onAction(false)}
-              >
-                <Text style={styles.buttonText}>NO</Text>
-              </TouchableOpacity>
+          {/* Outer glow effect */}
+          <View style={styles.glowEffect} />
+
+          {/* Main modal */}
+          <View style={styles.modal}>
+            {/* Message text above border line */}
+            <Text style={styles.messageText}>Message</Text>
+
+            {/* Top border line */}
+            <View style={styles.topBorderLine}>
+              <View style={styles.borderLineGlow} />
             </View>
-          )}
+
+            {/* Content area */}
+            <View style={styles.contentArea}>
+              <View style={styles.content}>
+                {/* Content will be added here if needed */}
+              </View>
+            </View>
+          </View>
         </Animated.View>
       </TouchableOpacity>
     </View>
@@ -120,97 +62,98 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 9999,
-    elevation: 9999,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    zIndex: 1000,
   },
   touchableArea: {
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000',
   },
   modalContainer: {
-    width: '85%',
-    minHeight: 200,
-    borderRadius: 15,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#d8b4fe',
-    overflow: 'hidden',
-    justifyContent: 'center',
+    width: width * 0.85,
+    maxWidth: 500,
+    position: 'relative',
   },
-  gradientBackground: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 15,
-    opacity: 0.95,
-  },
-  iconContainer: {
+  glowEffect: {
     position: 'absolute',
-    top: 20,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    borderRadius: 4,
+    shadowColor: NEON_COLOR,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 10,
   },
-  infoText: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#d8b4fe',
-    textAlign: 'center',
-    lineHeight: 30,
-    color: '#d8b4fe',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  infoLabel: {
-    color: '#d8b4fe',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  messageContainer: {
-    paddingTop: 70,
-    paddingBottom: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 120,
+  modal: {
+    backgroundColor: '#000',
+    borderWidth: 2,
+    borderColor: NEON_COLOR,
+    borderRadius: 2,
+    padding: 24,
+    position: 'relative',
+    shadowColor: NEON_COLOR,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 10,
   },
   messageText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    lineHeight: 28,
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    position: 'absolute',
+    top: 10,
+    left: 0,
+    right: 0,
     textAlign: 'center',
-    fontWeight: '500',
   },
-  highlightedText: {
-    color: '#d8b4fe',
-    fontWeight: 'bold',
+  topBorderLine: {
+    position: 'absolute',
+    top: 50,
+    left: 15,
+    right: 15,
+    height: 0.2,
+    backgroundColor: NEON_COLOR,
+    opacity: 0.8,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 20,
-    paddingHorizontal: 20,
+  borderLineGlow: {
+    position: 'absolute',
+    top: -1,
+    left: 0,
+    right: 0,
+    bottom: -1,
+    shadowColor: NEON_COLOR,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 2,
+    elevation: 4,
   },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderWidth: 1,
-    borderColor: '#d8b4fe',
-    borderRadius: 5,
-    backgroundColor: 'rgba(216, 180, 254, 0.1)',
+  contentArea: {
+    marginTop: 40,
+    marginBottom: 20,
+    minHeight: 180,
+    position: 'relative',
+    paddingBottom: 60,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  buttonText: {
-    color: '#d8b4fe',
-    fontSize: 16,
-    fontWeight: 'bold',
+  content: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
   },
 });
 

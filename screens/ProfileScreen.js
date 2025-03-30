@@ -1,15 +1,22 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity, Animated } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { Icons } from '../components/Icons';
+import { useNavigation } from '@react-navigation/native';
+import MessageModal from '../components/MessageModal';
 
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
+  const navigation = useNavigation();
 
   const toggleMenu = () => {
     const toValue = menuVisible ? width : 0;
@@ -22,18 +29,46 @@ export default function ProfileScreen() {
     }).start();
   };
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setUserData(userDoc.data());
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
+
+  if (loading || !userData) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  const calculateLevelProgress = () => {
+    const xpForNextLevel = (userData.level + 1) * 1000;
+    const progress = (userData.xp / xpForNextLevel) * 100;
+    return `${Math.min(progress, 100)}%`;
+  };
+
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#000000', '#000000', '#2e1065']}
-        locations={[0, 0.7, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      
+      {/* Header Icons */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={() => setShowMessageModal(true)}>
           <Icons name="mail" size={28} color="#d8b4fe" />
         </TouchableOpacity>
         <TouchableOpacity 
@@ -41,6 +76,14 @@ export default function ProfileScreen() {
           onPress={toggleMenu}>
           <Icons name="menu" size={28} color="#d8b4fe" />
         </TouchableOpacity>
+      </View>
+
+      {/* Level Bar */}
+      <View style={styles.levelContainer}>
+        <Text style={styles.levelText}>Lv. {userData.level}</Text>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: calculateLevelProgress() }]} />
+        </View>
       </View>
 
       {/* Sliding Menu */}
@@ -78,9 +121,23 @@ export default function ProfileScreen() {
         </View>
       </Animated.View>
 
-      <View style={styles.content}>
-        <Text style={styles.text}>Profile Screen</Text>
+      <View style={styles.mainContent}>
+        {/* Avatar */}
+        <Image
+          source={userData.gender === 'male' 
+            ? require('../assets/avatars/male-avatar.png')
+            : require('../assets/avatars/female-avatar.png')
+          }
+          style={styles.avatar}
+          resizeMode="contain"
+        />
       </View>
+
+      {/* Mail Message Modal */}
+      <MessageModal
+        visible={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+      />
     </View>
   );
 }
@@ -88,6 +145,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
@@ -95,7 +153,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 20,
-    marginBottom: 10,
+    marginBottom: -40,
   },
   iconButton: {
     padding: 12,
@@ -103,16 +161,48 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 12,
   },
-  content: {
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 50,
+  },
+  levelContainer: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    right: 0,
+    paddingVertical: 2,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  levelText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 4,
+    width: '50%',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#d8b4fe',
+    borderRadius: 4,
+  },
+  mainContent: {
     flex: 1,
-    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
+  avatar: {
+    width: width * 1.0,
+    height: width * 1.26,
+    marginTop: -120,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -143,6 +233,9 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(216, 180, 254, 0.1)',
     marginBottom: 20,
   },
+  userInfo: {
+    marginLeft: 12,
+  },
   menuUsername: {
     color: '#d8b4fe',
     fontSize: 16,
@@ -163,5 +256,5 @@ const styles = StyleSheet.create({
     color: '#d8b4fe',
     fontSize: 16,
     marginLeft: 12,
-  },
+  }
 });

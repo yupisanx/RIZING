@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WelcomeProvider, useWelcome } from './contexts/WelcomeContext';
+import { OnboardingProvider } from './contexts/OnboardingContext';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
@@ -167,7 +168,9 @@ export default function App() {
       <StatusBar style="light" />
       <AuthProvider>
         <WelcomeProvider>
-          <AppNavigator />
+          <OnboardingProvider>
+            <AppNavigator />
+          </OnboardingProvider>
         </WelcomeProvider>
       </AuthProvider>
     </SafeAreaProvider>

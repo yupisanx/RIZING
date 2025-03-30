@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext({});
 
@@ -19,6 +20,24 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
+  // Function to sync user data to local storage
+  const syncUserDataToStorage = async (userData) => {
+    try {
+      await AsyncStorage.setItem('@onboarding_data', JSON.stringify({
+        gender: userData.gender,
+        avatarId: userData.avatarId,
+        class: userData.class,
+        rank: userData.rank,
+        environment: userData.environment,
+        trainingDays: userData.trainingDays,
+        focusArea: userData.focusArea,
+        hasCompletedOnboarding: userData.hasCompletedOnboarding
+      }));
+    } catch (error) {
+      console.error('Error syncing user data to storage:', error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -28,16 +47,26 @@ export const AuthProvider = ({ children }) => {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            setHasCompletedOnboarding(!!userData.profile?.goal);
+            const hasCompletedOnboarding = userData.hasCompletedOnboarding === true;
+            
+            if (hasCompletedOnboarding) {
+              // Sync completed user data to local storage
+              await syncUserDataToStorage(userData);
+            }
+            
+            setHasCompletedOnboarding(hasCompletedOnboarding);
           } else {
-            // If user document doesn't exist, create it with initial data
-            await setDoc(doc(db, 'users', user.uid), {
+            // Create new user document with initial data
+            const initialUserData = {
               username: user.displayName || 'test_user',
               email: user.email,
               createdAt: serverTimestamp(),
               isFirstTime: true,
+              hasCompletedOnboarding: false,
               lastUpdated: serverTimestamp()
-            });
+            };
+            
+            await setDoc(doc(db, 'users', user.uid), initialUserData);
             setHasCompletedOnboarding(false);
           }
         } catch (error) {
@@ -47,6 +76,8 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null);
         setHasCompletedOnboarding(false);
+        // Clear local storage on logout
+        await AsyncStorage.removeItem('@onboarding_data');
       }
       setLoading(false);
     });
@@ -64,14 +95,18 @@ export const AuthProvider = ({ children }) => {
         displayName: username
       });
       
-      // Store additional user data in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      // Create initial user document
+      const initialUserData = {
         username: username,
         email: email,
         createdAt: serverTimestamp(),
         isFirstTime: true,
+        hasCompletedOnboarding: false,
         lastUpdated: serverTimestamp()
-      });
+      };
+      
+      await setDoc(doc(db, 'users', user.uid), initialUserData);
+      setHasCompletedOnboarding(false);
       
       return user;
     } catch (error) {
@@ -82,7 +117,22 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      const user = userCredential.user;
+      
+      // Check onboarding status
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const hasCompletedOnboarding = userData.hasCompletedOnboarding === true;
+        
+        if (hasCompletedOnboarding) {
+          await syncUserDataToStorage(userData);
+        }
+        
+        setHasCompletedOnboarding(hasCompletedOnboarding);
+      }
+      
+      return user;
     } catch (error) {
       throw error;
     }
@@ -91,6 +141,8 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await signOut(auth);
+      // Clear local storage on logout
+      await AsyncStorage.removeItem('@onboarding_data');
     } catch (error) {
       throw error;
     }

@@ -5,12 +5,16 @@ import { Icons } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../utils/theme';
 import { isTablet, isDesktop, getContainerWidth, platformSelect } from '../utils/responsive';
+import NeonModal from '../components/NeonModal';
+import MessageModal from '../components/MessageModal';
 
 const { width } = Dimensions.get('window');
 
 export default function QuestScreen() {
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [questModalVisible, setQuestModalVisible] = useState(true);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
   
   const toggleMenu = () => {
@@ -24,17 +28,31 @@ export default function QuestScreen() {
     }).start();
   };
 
+  const handleQuestAccept = () => {
+    setQuestModalVisible(false);
+    // Add your quest acceptance logic here
+    console.log('Quest accepted');
+  };
+
+  const handleQuestDecline = () => {
+    setQuestModalVisible(false);
+    // Add your quest decline logic here
+    console.log('Quest declined');
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#000000', '#000000', '#2e1065']}
+        colors={['#000000', '#000000', '#000000']}
         locations={[0, 0.7, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={() => setShowMessageModal(true)}>
           <Icons name="mail" size={isTablet ? 32 : 28} color={theme.colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity 
@@ -83,6 +101,21 @@ export default function QuestScreen() {
       <View style={styles.content}>
         <Text style={styles.text}>Quest Screen</Text>
       </View>
+
+      <NeonModal
+        isVisible={questModalVisible}
+        description="Embark on a journey to master your strength and agility. Are you ready to accept this challenge?"
+        onAccept={handleQuestAccept}
+        onDecline={handleQuestDecline}
+        acceptText="ACCEPT"
+        declineText="DECLINE"
+      />
+
+      {/* Mail Message Modal */}
+      <MessageModal
+        visible={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+      />
     </View>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Circle, Line } from "react-native-svg"
+import Svg, { Path, Circle, Line, Text } from "react-native-svg"
 
 export const Icons = ({ name, size = 16, color = "#c084fc", ...props }) => {
   switch (name) {
@@ -15,6 +15,8 @@ export const Icons = ({ name, size = 16, color = "#c084fc", ...props }) => {
       return <EyeOffIcon width={size} height={size} stroke={color} {...props} />;
     case 'arrow-right':
       return <ArrowRightIcon width={size} height={size} stroke={color} {...props} />;
+    case 'modern-arrow':
+      return <ModernArrowIcon width={size} height={size} stroke={color} {...props} />;
     case 'chevron-left':
       return <ChevronLeftIcon width={size} height={size} stroke={color} {...props} />;
     case 'chevron-right':
@@ -246,5 +248,23 @@ export const ChevronRightIcon = (props: any) => (
     {...props}
   >
     <Path d="M9 18l6-6-6-6" />
+  </Svg>
+)
+
+export const ModernArrowIcon = (props: any) => (
+  <Svg
+    width={16}
+    height={16}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <Path d="M5 12h14" />
+    <Path d="M12 5l7 7-7 7" />
+    <Path d="M12 5l7 7-7 7" opacity="0.5" />
   </Svg>
 ) 

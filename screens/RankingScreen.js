@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from '
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { Icons } from '../components/Icons';
+import MessageModal from '../components/MessageModal';
 
 const { width } = Dimensions.get('window');
 
 export default function RankingScreen() {
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
   
   const toggleMenu = () => {
@@ -25,14 +27,16 @@ export default function RankingScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#000000', '#000000', '#2e1065']}
+        colors={['#000000', '#000000', '#000000']}
         locations={[0, 0.7, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={() => setShowMessageModal(true)}>
           <Icons name="mail" size={28} color="#d8b4fe" />
         </TouchableOpacity>
         <TouchableOpacity 
@@ -80,6 +84,12 @@ export default function RankingScreen() {
       <View style={styles.content}>
         <Text style={styles.text}>Ranking Screen</Text>
       </View>
+
+      {/* Mail Message Modal */}
+      <MessageModal
+        visible={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+      />
     </View>
   );
 }

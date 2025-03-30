@@ -11,6 +11,7 @@ const { width } = Dimensions.get('window');
 export default function HomeScreen() {
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(width)).current;
   const { 
     currentMessage, 
@@ -52,7 +53,9 @@ export default function HomeScreen() {
       {!showMessage && (
         <>
           <View style={styles.header}>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity 
+              style={styles.iconButton}
+              onPress={() => setShowMessageModal(true)}>
               <Icons name="mail" size={28} color="#d8b4fe" />
             </TouchableOpacity>
             <TouchableOpacity 
@@ -137,6 +140,12 @@ export default function HomeScreen() {
           onClose={handleMessageInteraction}
         />
       )}
+
+      {/* Mail Message Modal */}
+      <MessageModal
+        visible={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+      />
     </View>
   );
 }
