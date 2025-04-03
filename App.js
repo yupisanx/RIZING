@@ -6,6 +6,9 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WelcomeProvider, useWelcome } from './contexts/WelcomeContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
+import { MenuProvider } from './contexts/MenuContext';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
@@ -13,6 +16,7 @@ import QuestScreen from './screens/QuestScreen';
 import RankingScreen from './screens/RankingScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import LoadingScreen from './components/LoadingScreen';
+import Menu from './components/Menu';
 import { StatusBar } from 'expo-status-bar';
 import { Icons } from './components/Icons';
 import { theme } from './utils/theme';
@@ -75,6 +79,8 @@ function TabNavigator() {
           right: 0,
           paddingBottom: insets.bottom,
           display: showingWelcome ? 'none' : 'flex',
+          zIndex: 999999,
+          elevation: 999999,
           ...theme.shadows.small,
         },
         tabBarShowLabel: false,
@@ -164,16 +170,23 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
-      <AuthProvider>
-        <WelcomeProvider>
-          <OnboardingProvider>
-            <AppNavigator />
-          </OnboardingProvider>
-        </WelcomeProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <BottomSheetModalProvider>
+          <AuthProvider>
+            <WelcomeProvider>
+              <OnboardingProvider>
+                <MenuProvider>
+                  <AppNavigator />
+                  <Menu />
+                  <StatusBar style="light" />
+                </MenuProvider>
+              </OnboardingProvider>
+            </WelcomeProvider>
+          </AuthProvider>
+        </BottomSheetModalProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
