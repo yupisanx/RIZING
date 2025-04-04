@@ -1,0 +1,153 @@
+{
+  "gender": "Male",
+  "class": "Assassin",
+  "goal": "Endurance",
+  "environment": "Home",
+  "training_frequency": 4,
+  "plan": {
+    "day1": {
+      "focus": "Full Body",
+      "exercises": [
+        {
+          "name": "Skaters",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Jumping Jacks",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day2": {
+      "focus": "Legs",
+      "exercises": [
+        {
+          "name": "Side Lunges",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Walking Lunges",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Bulgarian Split Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Sumo Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Bodyweight Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day3": {
+      "focus": "Core",
+      "exercises": [
+        {
+          "name": "Flutter Kicks",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Leg Raises",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Sit-ups",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Toe Touches",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Bicycle Crunches",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        }
+      ],
+      "total_reps_all_exercises": 300
+    },
+    "day4": {
+      "focus": "Upper Body",
+      "exercises": [
+        {
+          "name": "Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Plank to Push",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Resistance Band Rows",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Lateral Raises",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Incline Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    }
+  }
+}

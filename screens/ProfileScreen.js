@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity, Animated, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useMenu } from '../contexts/MenuContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Icons } from '../components/Icons';
 import { useNavigation } from '@react-navigation/native';
@@ -22,7 +22,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const AVATAR_HEIGHT = width * 1.26;
   const navigation = useNavigation();
-  const { toggleMenu } = useMenu();
+  const { toggleMenu, logout } = useMenu();
 
   // Calculate responsive avatar margin
   const avatarMarginTop = useMemo(() => {
@@ -38,71 +38,126 @@ export default function ProfileScreen() {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const isMounted = useRef(true);
+  const navigationTimeoutRef = useRef(null);
+  const lastToggleTime = useRef(Date.now());
+  const MIN_TOGGLE_INTERVAL = 300; // Minimum time between toggles in ms
+  const isAnimating = useRef(false);
 
-  // Initialize animation value and show bottom sheet
+  // Clear any pending timeouts when component unmounts
   useEffect(() => {
-    setIsBottomSheetVisible(true);
-    
     return () => {
       isMounted.current = false;
-      setIsBottomSheetVisible(false);
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
     };
   }, []);
 
-  // Handle navigation focus changes
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      setIsBottomSheetVisible(true);
-    });
+  const safeSetBottomSheetVisible = (visible) => {
+    const now = Date.now();
+    const timeSinceLastToggle = now - lastToggleTime.current;
 
-    const blurUnsubscribe = navigation.addListener('blur', () => {
-      setIsBottomSheetVisible(false);
-    });
+    // If we're animating or toggling too quickly, queue the change
+    if (isAnimating.current || timeSinceLastToggle < MIN_TOGGLE_INTERVAL) {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+      navigationTimeoutRef.current = setTimeout(() => {
+        if (isMounted.current) {
+          lastToggleTime.current = Date.now();
+          setIsBottomSheetVisible(visible);
+        }
+      }, MIN_TOGGLE_INTERVAL);
+      return;
+    }
+
+    // Otherwise, update immediately
+    lastToggleTime.current = now;
+    setIsBottomSheetVisible(visible);
+  };
+
+  useEffect(() => {
+    const handleFocus = () => {
+      safeSetBottomSheetVisible(true);
+    };
+
+    const handleBlur = () => {
+      // Only hide if we've been visible for at least MIN_TOGGLE_INTERVAL
+      const timeSinceLastToggle = Date.now() - lastToggleTime.current;
+      if (timeSinceLastToggle >= MIN_TOGGLE_INTERVAL) {
+        safeSetBottomSheetVisible(false);
+      }
+    };
+
+    const unsubscribe = navigation.addListener('focus', handleFocus);
+    const blurUnsubscribe = navigation.addListener('blur', handleBlur);
+
+    // Show bottom sheet initially if screen is focused
+    if (navigation.isFocused()) {
+      handleFocus();
+    }
 
     return () => {
       unsubscribe();
       blurUnsubscribe();
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
     };
   }, [navigation]);
 
   useEffect(() => {
     let isSubscribed = true;
+    let unsubscribe;
 
-    const fetchUserData = async () => {
+    const setupRealtimeUpdates = async () => {
       if (!user?.uid) return;
 
       try {
         setError(null);
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        
-        if (!isSubscribed) return;
-
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setUserData(data);
-        } else {
-          setError('User data not found');
-        }
+        // Set up real-time listener
+        unsubscribe = onSnapshot(doc(db, 'users', user.uid), 
+          (doc) => {
+            if (!isSubscribed) return;
+            
+            if (doc.exists()) {
+              const data = doc.data();
+              console.log('Real-time update received:', data);
+              setUserData(data);
+            } else {
+              setError('User data not found');
+            }
+            setLoading(false);
+          },
+          (error) => {
+            if (!isSubscribed) return;
+            console.error('Error in real-time updates:', error);
+            setError('Failed to load user data');
+            setLoading(false);
+          }
+        );
       } catch (error) {
         if (!isSubscribed) return;
-        console.error('Error fetching user data:', error);
+        console.error('Error setting up real-time updates:', error);
         setError('Failed to load user data');
-      } finally {
-        if (isSubscribed) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
-    fetchUserData();
+    setupRealtimeUpdates();
 
     return () => {
       isSubscribed = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [user?.uid]);
 
   const handleBottomSheetClose = () => {
-    setIsBottomSheetVisible(false);
+    if (isMounted.current) {
+      safeSetBottomSheetVisible(false);
+    }
   };
 
   if (loading) {
@@ -168,14 +223,14 @@ export default function ProfileScreen() {
           onPress={() => setShowMessageModal(true)}
           accessibilityLabel="Open messages"
         >
-          <Icons name="mail" size={28} color="#d8b4fe" />
+          <Icons name="mail" size={28} color="#60a5fa" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.menuButton}
           onPress={toggleMenu}
           accessibilityLabel="Open menu"
         >
-          <Icons name="menu" size={28} color="#d8b4fe" />
+          <Icons name="menu" size={28} color="#60a5fa" />
         </TouchableOpacity>
       </View>
 
@@ -207,25 +262,55 @@ export default function ProfileScreen() {
         isVisible={isBottomSheetVisible}
         onClose={handleBottomSheetClose}
         initialSnapPoint={0}
+        onAnimationStart={() => {
+          isAnimating.current = true;
+        }}
+        onAnimationEnd={() => {
+          isAnimating.current = false;
+        }}
       >
         <View style={styles.bottomSheetContent}>
-          <Text style={styles.bottomSheetTitle}>TIER BENEFITS</Text>
-          <View style={styles.progressContainer}>
-            <View style={styles.xpContainer}>
-              <Text style={styles.xpText}>75XP</Text>
-              <Text style={styles.xpText}>1175XP TO TIER 2</Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '25%' }]} />
-            </View>
-            <View style={styles.tierContainer}>
-              <Text style={styles.tierText}>TIER 1</Text>
-            </View>
+          <View style={styles.infoContainer}>
+            <Icons name="info" size={24} color="#60a5fa" />
+            <Text style={styles.bottomSheetTitle}>INFO</Text>
           </View>
-          <View style={styles.benefitsList}>
-            <View style={styles.benefitItem}>
-              <Icons name="check" size={20} color="#d8b4fe" />
-              <Text style={styles.benefitText}>15% Birthday reward</Text>
+
+          <View style={styles.userDataContainer}>
+            {/* Stats */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Stats</Text>
+              <View style={styles.userDataRow}>
+                <Text style={styles.label}>Class:</Text>
+                <Text style={styles.value}>{userData?.class || 'N/A'}</Text>
+              </View>
+              <View style={styles.userDataRow}>
+                <Text style={styles.label}>Strength:</Text>
+                <Text style={styles.value}>{userData?.stats?.strength || '0'}</Text>
+              </View>
+              <View style={styles.userDataRow}>
+                <Text style={styles.label}>Vitality:</Text>
+                <Text style={styles.value}>{userData?.stats?.vitality || '0'}</Text>
+              </View>
+              <View style={styles.userDataRow}>
+                <Text style={styles.label}>Agility:</Text>
+                <Text style={styles.value}>{userData?.stats?.agility || '0'}</Text>
+              </View>
+              <View style={styles.userDataRow}>
+                <Text style={styles.label}>Intelligence:</Text>
+                <Text style={styles.value}>{userData?.stats?.intelligence || '0'}</Text>
+              </View>
+              <View style={styles.userDataRow}>
+                <Text style={styles.label}>Sense:</Text>
+                <Text style={styles.value}>{userData?.stats?.sense || '0'}</Text>
+              </View>
+            </View>
+
+            {/* Focus Areas */}
+            <View style={[styles.sectionContainer, styles.lastSection]}>
+              <Text style={styles.sectionTitle}>Area</Text>
+              <View style={styles.userDataRow}>
+                <Text style={styles.value}>{userData?.focusArea || 'None selected'}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -281,7 +366,7 @@ const styles = StyleSheet.create({
     color: '#ff6b6b',
   },
   retryButton: {
-    backgroundColor: '#d8b4fe',
+    backgroundColor: '#60a5fa',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -296,65 +381,104 @@ const styles = StyleSheet.create({
   bottomSheetContent: {
     flex: 1,
   },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
   bottomSheetTitle: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 30,
     letterSpacing: 1,
   },
-  progressContainer: {
-    marginBottom: 30,
+  userDataContainer: {
     width: '100%',
-  },
-  xpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  xpText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  progressBar: {
-    height: 3,
-    backgroundColor: '#333333',
-    borderRadius: 1.5,
-    marginBottom: 20,
-    width: '100%',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#d8b4fe',
-    borderRadius: 1.5,
-  },
-  tierContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  tierText: {
-    color: '#ffffff',
-    fontSize: 32,
-    fontWeight: 'bold',
-    letterSpacing: 2,
-  },
-  benefitsList: {
+    paddingHorizontal: 20,
     marginTop: 20,
   },
-  benefitItem: {
+  sectionContainer: {
+    marginBottom: 20,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(96, 165, 250, 0.3)',
+    paddingBottom: 10,
+  },
+  lastSection: {
+    marginBottom: 0,
+    borderBottomWidth: 0,
+  },
+  sectionTitle: {
+    color: '#60a5fa',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    letterSpacing: 0.5,
+  },
+  userDataRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  label: {
+    color: '#fff',
+    fontSize: 16,
+    opacity: 0.9,
+  },
+  value: {
+    color: '#60a5fa',
+    fontSize: 16,
+    fontWeight: '600',
+    maxWidth: '60%',
+    textAlign: 'right',
+  },
+  menuContent: {
+    padding: 20,
+    marginTop: 60,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(96, 165, 250, 0.1)',
+    marginBottom: 20,
+  },
+  userInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  menuUsername: {
+    color: '#60a5fa',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  emailLabel: {
+    color: '#60a5fa',
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  menuEmail: {
+    color: '#60a5fa',
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(216, 180, 254, 0.1)',
-    borderRadius: 10,
   },
-  benefitText: {
-    color: '#ffffff',
+  menuItemText: {
+    color: '#60a5fa',
     fontSize: 16,
     marginLeft: 12,
-    fontWeight: '500',
-  }
+  },
 });

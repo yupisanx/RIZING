@@ -3,8 +3,8 @@ import { View, Text, TouchableOpacity, Animated, StyleSheet, Dimensions } from '
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
-const NEON_COLOR = '#8a2be2'; // Blueviolet
-const SHADOW_COLOR = 'rgba(138,43,226,0.8)';
+const NEON_COLOR = '#3b82f6'; // Blue
+const SHADOW_COLOR = 'rgba(59, 130, 246, 0.8)';
 
 const MessageModal = ({ visible, onClose }) => {
   const [fadeAnim] = useState(new Animated.Value(0));

@@ -91,11 +91,11 @@ const styles = StyleSheet.create({
     borderColor: '#2d2d2d',
   },
   selectedOption: {
-    backgroundColor: '#6d28d9',
-    borderColor: '#d8b4fe',
+    backgroundColor: '#60a5fa',
+    borderColor: '#60a5fa',
   },
   className: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 5,

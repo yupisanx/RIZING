@@ -29,9 +29,9 @@ export default function Menu() {
               style={styles.backButton}
               accessibilityLabel="Back to app"
             >
-              <Icons name="chevron-left" size={24} color="#d8b4fe" />
+              <Icons name="chevron-left" size={24} color="#60a5fa" />
             </TouchableOpacity>
-            <Text style={styles.menuTitle}>SETTINGS</Text>
+            <Text style={styles.menuTitle}>MENU</Text>
           </View>
 
           <View style={styles.emailContainer}>
@@ -47,7 +47,7 @@ export default function Menu() {
             accessibilityLabel="Logout"
           >
             <Text style={styles.logoutText}>Logout</Text>
-            <Icons name="logout" size={20} color="#d8b4fe" style={styles.logoutIcon} />
+            <Icons name="logout" size={20} color="#60a5fa" style={styles.logoutIcon} />
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(216, 180, 254, 0.1)',
   },
   emailText: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 16,
     opacity: 0.9,
   },
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutText: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 16,
     fontWeight: '500',
     marginRight: 12,

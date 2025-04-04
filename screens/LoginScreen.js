@@ -73,7 +73,7 @@ export default function LoginScreen({ navigation }) {
       style={styles.container}
     >
       <LinearGradient
-        colors={['#000000', '#000000', '#2e1065']}
+        colors={['#000000', '#000000', '#000000']}
         style={styles.background}
       />
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -183,8 +183,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 30,
     borderWidth: 1,
-    borderColor: 'rgba(216, 180, 254, 0.5)',
-    shadowColor: '#d8b4fe',
+    borderColor: 'rgba(96, 165, 250, 0.5)',
+    shadowColor: '#60a5fa',
     shadowOffset: {
       width: 0,
       height: 0,
@@ -196,12 +196,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#60a5fa',
     textAlign: 'center',
     marginBottom: 25,
     textTransform: 'uppercase',
     letterSpacing: 2,
-    textShadowColor: '#d8b4fe',
+    textShadowColor: '#60a5fa',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
@@ -214,9 +214,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
-    color: '#ffffff',
+    color: '#60a5fa',
     borderWidth: 1,
-    borderColor: 'rgba(216, 180, 254, 0.2)',
+    borderColor: 'rgba(96, 165, 250, 0.2)',
     fontSize: 16,
   },
   passwordContainer: {
@@ -237,11 +237,11 @@ const styles = StyleSheet.create({
     marginTop: -5,
   },
   forgotPasswordText: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 14,
   },
   loginButton: {
-    backgroundColor: '#d8b4fe',
+    backgroundColor: '#60a5fa',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   signupTextBold: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontWeight: 'bold',
   },
   inputError: {

@@ -73,17 +73,17 @@ const styles = StyleSheet.create({
     borderColor: '#2d2d2d',
   },
   selectedEnvironment: {
-    backgroundColor: '#6d28d9',
-    borderColor: '#d8b4fe',
+    backgroundColor: '#3b82f6',
+    borderColor: '#60a5fa',
   },
   environmentName: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 5,
   },
   environmentDescription: {
-    color: '#a78bfa',
+    color: '#93c5fd',
     fontSize: 14,
   },
   selectedEnvironmentText: {

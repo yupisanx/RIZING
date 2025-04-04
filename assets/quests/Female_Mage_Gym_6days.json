@@ -1,0 +1,225 @@
+{
+  "gender": "Female",
+  "class": "Mage",
+  "goal": "General Fitness",
+  "environment": "Gym",
+  "training_frequency": 6,
+  "plan": {
+    "day1": {
+      "focus": "Chest",
+      "exercises": [
+        {
+          "name": "Close-Grip Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Clap Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Wide Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Chest Dips",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Floor Press",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day2": {
+      "focus": "Back",
+      "exercises": [
+        {
+          "name": "Table Rows",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Back Extensions",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Reverse Snow Angels",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Resistance Band Rows",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Wall Pulls",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day3": {
+      "focus": "Legs",
+      "exercises": [
+        {
+          "name": "Sumo Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Side Lunges",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Walking Lunges",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Bulgarian Split Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Glute Bridges",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day4": {
+      "focus": "Shoulders",
+      "exercises": [
+        {
+          "name": "Lateral Raises",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Reverse Flys",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Wall Walks",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Face Pulls (Band)",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Pike Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day5": {
+      "focus": "Core",
+      "exercises": [
+        {
+          "name": "Plank",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "V-Ups",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Toe Touches",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Flutter Kicks",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        }
+      ],
+      "total_reps_all_exercises": 300
+    },
+    "day6": {
+      "focus": "Full Body",
+      "exercises": [
+        {
+          "name": "Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Inchworm to Push-up",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Squat to Press",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "High Knees",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    }
+  }
+}

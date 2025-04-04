@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   frequencyValue: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 32,
     fontWeight: '600',
     textAlign: 'center',
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   frequencyLabel: {
-    color: '#8E8E93',
+    color: '#60a5fa',
     fontSize: 16,
     textAlign: 'center',
   },

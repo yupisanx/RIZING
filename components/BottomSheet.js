@@ -4,7 +4,7 @@ import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-const NAV_BAR_HEIGHT = 80; // Height of the navigation bar
+const NAV_BAR_HEIGHT = 75; // Reduced from 80 to 75 to bring bottom sheet closer to nav bar
 
 const BottomSheet = ({ children, isVisible, onClose, initialSnapPoint = 0 }) => {
   const insets = useSafeAreaInsets();
@@ -15,7 +15,7 @@ const BottomSheet = ({ children, isVisible, onClose, initialSnapPoint = 0 }) => 
   
   // Calculate snap points to match Gymshark example
   const snapPoints = useMemo(() => {
-    const minHeight = Math.floor(availableHeight * 0.15); // Initial height (15% of available space)
+    const minHeight = Math.floor(availableHeight * 0.12); // Initial height (12% of available space)
     const maxHeight = Math.floor(availableHeight * 0.8); // Max height (80% of available space)
     return [minHeight, maxHeight];
   }, [availableHeight]);
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    shadowColor: '#d8b4fe',
+    shadowColor: '#60a5fa',
     shadowOffset: {
       width: 0,
       height: -6,
@@ -97,15 +97,15 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     ...Platform.select({
       ios: {
-        shadowColor: '#d8b4fe',
+        shadowColor: '#60a5fa',
       },
       android: {
         elevation: 50,
-        shadowColor: '#d8b4fe',
+        shadowColor: '#60a5fa',
         shadowOpacity: 0.8,
         shadowRadius: 24,
         borderWidth: 0.4,
-        borderColor: '#d8b4fe',
+        borderColor: '#60a5fa',
         borderTopWidth: 0.4,
         borderLeftWidth: 0.4,
         borderRightWidth: 0.4,
@@ -122,18 +122,18 @@ const styles = StyleSheet.create({
     ...Platform.select({
       android: {
         elevation: 50,
-        shadowColor: '#d8b4fe',
+        shadowColor: '#60a5fa',
         shadowOpacity: 0.8,
         shadowRadius: 24,
         borderTopWidth: 0.4,
         borderLeftWidth: 0.4,
         borderRightWidth: 0.4,
-        borderColor: '#d8b4fe',
+        borderColor: '#60a5fa',
       },
     }),
   },
   indicator: {
-    backgroundColor: '#d8b4fe',
+    backgroundColor: '#60a5fa',
     width: 40,
     height: 4,
     borderRadius: 2,

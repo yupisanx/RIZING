@@ -1,7 +1,7 @@
 import React from 'react';
 import Svg, { Path, Circle, Line, Text } from "react-native-svg"
 
-export const Icons = ({ name, size = 16, color = "#c084fc", ...props }) => {
+export const Icons = ({ name, size = 16, color = "#60a5fa", ...props }) => {
   switch (name) {
     case 'mail':
       return <MailIcon width={size} height={size} stroke={color} {...props} />;
@@ -121,7 +121,7 @@ export const MailIcon = (props: any) => (
     height={16}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#c084fc"
+    stroke="#60a5fa"
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -138,7 +138,7 @@ export const LockIcon = (props: any) => (
     height={16}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#c084fc"
+    stroke="#60a5fa"
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -155,7 +155,7 @@ export const UserIcon = (props: any) => (
     height={16}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#c084fc"
+    stroke="#60a5fa"
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -172,7 +172,7 @@ export const EyeIcon = (props: any) => (
     height={16}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#c084fc"
+    stroke="#60a5fa"
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -189,7 +189,7 @@ export const EyeOffIcon = (props: any) => (
     height={16}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#c084fc"
+    stroke="#60a5fa"
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -225,7 +225,7 @@ export const ChevronLeftIcon = (props: any) => (
     height={16}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#c084fc"
+    stroke="#60a5fa"
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -241,7 +241,7 @@ export const ChevronRightIcon = (props: any) => (
     height={16}
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#c084fc"
+    stroke="#60a5fa"
     strokeWidth={2}
     strokeLinecap="round"
     strokeLinejoin="round"

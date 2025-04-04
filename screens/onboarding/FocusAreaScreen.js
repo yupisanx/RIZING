@@ -80,10 +80,15 @@ const FocusAreaScreen = ({ navigation }) => {
           intelligence: 0,
           sense: 0,
         },
+        currentQuestIndex: 0,
+        streak: 0,
+        lastQuestGeneratedAt: null,
+        countdownEnd: null,
         createdAt: new Date(),
         lastUpdated: new Date(),
         hasCompletedOnboarding: true,
         isFirstTime: false,
+        frequency: onboardingData.trainingDays,
       };
 
       // Save to Firestore
@@ -210,7 +215,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   loadingText: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 16,
     marginTop: 20,
     textAlign: 'center',

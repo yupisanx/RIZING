@@ -74,11 +74,11 @@ const styles = StyleSheet.create({
     borderColor: '#2d2d2d',
   },
   selectedRank: {
-    backgroundColor: '#6d28d9',
-    borderColor: '#d8b4fe',
+    backgroundColor: '#60a5fa',
+    borderColor: '#60a5fa',
   },
   rankName: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 5,

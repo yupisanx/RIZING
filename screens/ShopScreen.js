@@ -33,12 +33,12 @@ export default function ShopScreen() {
       />
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconButton}>
-          <Icons name="mail" size={28} color="#d8b4fe" />
+          <Icons name="mail" size={28} color="#60a5fa" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.menuButton}
           onPress={toggleMenu}>
-          <Icons name="menu" size={28} color="#d8b4fe" />
+          <Icons name="menu" size={28} color="#60a5fa" />
         </TouchableOpacity>
       </View>
 
@@ -59,7 +59,7 @@ export default function ShopScreen() {
         ]}>
         <View style={styles.menuContent}>
           <View style={styles.menuHeader}>
-            <Icons name="user" size={24} color="#d8b4fe" />
+            <Icons name="user" size={24} color="#60a5fa" />
             <View style={styles.userInfo}>
               <Text style={styles.menuUsername}>{user?.displayName || 'User'}</Text>
               <Text style={styles.menuEmail}>{user?.email}</Text>
@@ -71,7 +71,7 @@ export default function ShopScreen() {
               toggleMenu();
               logout();
             }}>
-            <Icons name="log-out" size={20} color="#d8b4fe" />
+            <Icons name="log-out" size={20} color="#60a5fa" />
             <Text style={styles.menuItemText}>Logout</Text>
           </TouchableOpacity>
         </View>
@@ -145,13 +145,13 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   menuUsername: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   menuEmail: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 14,
     opacity: 0.8,
   },
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   menuItemText: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 16,
     marginLeft: 12,
   },

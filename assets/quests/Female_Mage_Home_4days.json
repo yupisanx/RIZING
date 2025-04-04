@@ -1,0 +1,153 @@
+{
+  "gender": "Female",
+  "class": "Mage",
+  "goal": "General Fitness",
+  "environment": "Home",
+  "training_frequency": 4,
+  "plan": {
+    "day1": {
+      "focus": "Full Body",
+      "exercises": [
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Skaters",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "High Knees",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Plank to Push",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Jumping Jacks",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day2": {
+      "focus": "Legs",
+      "exercises": [
+        {
+          "name": "Sumo Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Side Lunges",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Glute Bridges",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Wall Sit",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Bodyweight Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day3": {
+      "focus": "Core",
+      "exercises": [
+        {
+          "name": "Leg Raises",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Bicycle Crunches",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Flutter Kicks",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Plank Jacks",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        }
+      ],
+      "total_reps_all_exercises": 300
+    },
+    "day4": {
+      "focus": "Upper Body",
+      "exercises": [
+        {
+          "name": "T-Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Plank to Push",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Shoulder Press (Band)",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Front Raises",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Pike Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    }
+  }
+}

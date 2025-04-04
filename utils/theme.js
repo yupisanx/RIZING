@@ -13,15 +13,15 @@ export const moderateScale = (size, factor = 0.5) => size + (scale(size) - size)
 
 export const theme = {
   colors: {
-    primary: '#d8b4fe',
-    secondary: '#2e1065',
+    primary: '#60a5fa',
+    secondary: '#1e40af',
     background: '#000000',
     inactive: '#6b7280',
-    border: 'rgba(216, 180, 254, 0.3)',
+    border: 'rgba(96, 165, 250, 0.3)',
     overlay: 'rgba(0, 0, 0, 0.5)',
     text: {
       primary: '#ffffff',
-      secondary: '#d8b4fe',
+      secondary: '#60a5fa',
       inactive: '#6b7280',
     }
   },

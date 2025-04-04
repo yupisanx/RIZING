@@ -56,12 +56,12 @@ export default function HomeScreen() {
             <TouchableOpacity 
               style={styles.iconButton}
               onPress={() => setShowMessageModal(true)}>
-              <Icons name="mail" size={28} color="#d8b4fe" />
+              <Icons name="mail" size={28} color="#60a5fa" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.menuButton}
               onPress={toggleMenu}>
-              <Icons name="menu" size={28} color="#d8b4fe" />
+              <Icons name="menu" size={28} color="#60a5fa" />
             </TouchableOpacity>
           </View>
 
@@ -82,7 +82,7 @@ export default function HomeScreen() {
             ]}>
             <View style={styles.menuContent}>
               <View style={styles.menuHeader}>
-                <Icons name="user" size={24} color="#d8b4fe" />
+                <Icons name="user" size={24} color="#60a5fa" />
                 <View style={styles.userInfo}>
                   <Text style={styles.menuUsername}>{user?.displayName || 'User'}</Text>
                   <Text style={styles.menuEmail}>{user?.email}</Text>
@@ -94,7 +94,7 @@ export default function HomeScreen() {
                   toggleMenu();
                   logout();
                 }}>
-                <Icons name="log-out" size={20} color="#d8b4fe" />
+                <Icons name="log-out" size={20} color="#60a5fa" />
                 <Text style={styles.menuItemText}>Logout</Text>
               </TouchableOpacity>
             </View>
@@ -116,7 +116,7 @@ export default function HomeScreen() {
 
           <View style={styles.questCard}>
             <View style={styles.questHeader}>
-              <Icons name="info" size={24} color="#d8b4fe" />
+              <Icons name="info" size={24} color="#60a5fa" />
               <Text style={styles.questTitle}>DAILY QUEST</Text>
             </View>
             <Text style={styles.questInstructions}>
@@ -200,12 +200,12 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   menuUsername: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 14,
     fontWeight: 'bold',
   },
   menuEmail: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 14,
   },
   menuItem: {
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   menuItemText: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 16,
     marginLeft: 12,
   },
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     padding: 20,
     position: 'relative',
     borderWidth: 1,
-    borderColor: '#d8b4fe',
+    borderColor: '#60a5fa',
   },
   dotContainer: {
     flexDirection: 'row',
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardSubtitle: {
-    color: 'rgba(216, 180, 254, 0.6)',
+    color: 'rgba(96, 165, 250, 0.6)',
     fontSize: 16,
   },
   progressCircle: {
@@ -256,13 +256,13 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: '#d8b4fe',
+    borderColor: '#60a5fa',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   progressText: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 18,
   },
   questCard: {
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#d8b4fe',
+    borderColor: '#60a5fa',
   },
   questHeader: {
     flexDirection: 'row',
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   questTitle: {
-    color: '#d8b4fe',
+    color: '#60a5fa',
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 10,
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   addButton: {
-    backgroundColor: '#d8b4fe',
+    backgroundColor: '#60a5fa',
     width: 50,
     height: 50,
     borderRadius: 25,

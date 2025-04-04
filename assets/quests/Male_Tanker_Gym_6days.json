@@ -1,0 +1,225 @@
+{
+  "gender": "Male",
+  "class": "Tanker",
+  "goal": "Muscle Gain",
+  "environment": "Gym",
+  "training_frequency": 6,
+  "plan": {
+    "day1": {
+      "focus": "Chest",
+      "exercises": [
+        {
+          "name": "Chest Fly (Band)",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Resistance Band Chest Press",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Floor Press",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Chest Dips",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day2": {
+      "focus": "Back",
+      "exercises": [
+        {
+          "name": "Back Extensions",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Prone Y-Raise",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Table Rows",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Superman Pull",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Rear Delt Raises",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day3": {
+      "focus": "Legs",
+      "exercises": [
+        {
+          "name": "Step-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Sumo Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Jump Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Heel Elevated Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Bulgarian Split Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day4": {
+      "focus": "Shoulders",
+      "exercises": [
+        {
+          "name": "Reverse Flys",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Wall Walks",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Pike Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Face Pulls (Band)",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Shoulder Press (Band)",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    },
+    "day5": {
+      "focus": "Core",
+      "exercises": [
+        {
+          "name": "Plank Jacks",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Plank",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Toe Touches",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "V-Ups",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        },
+        {
+          "name": "Leg Raises",
+          "sets": 3,
+          "reps": 20,
+          "total": 60
+        }
+      ],
+      "total_reps_all_exercises": 300
+    },
+    "day6": {
+      "focus": "Full Body",
+      "exercises": [
+        {
+          "name": "Jumping Jacks",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Squat to Press",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Plank to Push",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": 15,
+          "total": 45
+        }
+      ],
+      "total_reps_all_exercises": 225
+    }
+  }
+}

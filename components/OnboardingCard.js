@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#6d28d9',
+    backgroundColor: '#60a5fa',
     borderRadius: 1.5,
   },
   stepIndicator: {
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   nextButton: {
     width: width - 160,
     height: 56,
-    backgroundColor: '#6d28d9',
+    backgroundColor: '#60a5fa',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 28,

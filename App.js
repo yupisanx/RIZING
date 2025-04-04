@@ -83,7 +83,11 @@ function TabNavigator() {
           elevation: 999999,
           ...theme.shadows.small,
         },
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          marginBottom: 2,
+        },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.inactive,
         tabBarItemStyle: {
