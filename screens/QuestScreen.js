@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QuestComponent from '../components/QuestComponent';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import buildQuestFilename from '../quest_filename_builder';
 import questMap from '../assets/quests/questMap';
@@ -24,6 +24,7 @@ export default function QuestScreen() {
   const [loading, setLoading] = useState(true);
   const [todayQuest, setTodayQuest] = useState(null);
   const [error, setError] = useState(null);
+  const [countdownEnd, setCountdownEnd] = useState(null);
 
   useEffect(() => {
     if (user?.uid) {
@@ -63,6 +64,16 @@ export default function QuestScreen() {
       }
 
       setTodayQuest(todayQuestData);
+
+      // Update Firestore document with the selected quest and timestamps
+      const countdownEndTimestamp = playerData.countdownEnd || Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+      setCountdownEnd(countdownEndTimestamp);
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        activeQuest: todayQuestData,
+        countdownEnd: countdownEndTimestamp,
+        lastQuestGeneratedAt: Timestamp.now(),
+      });
     } catch (error) {
       console.error('Error loading quest:', error);
       setError(error.message);
@@ -94,6 +105,7 @@ export default function QuestScreen() {
               questData={todayQuest}
               loading={loading}
               error={error}
+              countdownEnd={countdownEnd}
             />
           </View>
           <View style={styles.extraSpace} />

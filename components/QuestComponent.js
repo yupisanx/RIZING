@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icons } from './Icons';
@@ -9,11 +9,43 @@ const QuestComponent = ({
   isVisible,
   questData,
   loading,
-  error
+  error,
+  countdownEnd
 }) => {
   if (!isVisible) {
     return null;
   }
+
+  const [remainingTime, setRemainingTime] = useState('');
+
+  useEffect(() => {
+    if (!countdownEnd) return;
+
+    const updateRemainingTime = () => {
+      const now = new Date();
+      const distance = countdownEnd.toDate() - now;
+
+      if (distance <= 0) {
+        setRemainingTime('00:00:00');
+        // Trigger Quest Failure flow
+        console.log('Quest Failed');
+        return;
+      }
+
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setRemainingTime(
+        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      );
+    };
+
+    const intervalId = setInterval(updateRemainingTime, 1000);
+    updateRemainingTime(); // Initial call to set the time immediately
+
+    return () => clearInterval(intervalId);
+  }, [countdownEnd]);
 
   const renderExercise = (exercise, index) => (
     <View key={index} style={styles.exerciseRow}>
@@ -75,6 +107,12 @@ const QuestComponent = ({
               </View>
               <Text style={styles.warningWhiteText}>THIS DAILY QUEST WILL BRING A PENALTY</Text>
             </View>
+          </View>
+
+          {/* Countdown timer below warning text */}
+          <View style={styles.timerContainer}>
+            <Icons name="clock" size={20} color="#ffffff" style={styles.clockIcon} />
+            <Text style={styles.timerText}>{remainingTime}</Text>
           </View>
 
           {/* Bottom border line */}
@@ -239,6 +277,22 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 0,
+  },
+  clockIcon: {
+    marginRight: 5,
+  },
+  timerText: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 0,
   },
 });
 
