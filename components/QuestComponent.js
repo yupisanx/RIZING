@@ -1,56 +1,140 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icons } from './Icons';
 
 const { width, height } = Dimensions.get('window');
+const NEON_COLOR = '#3b82f6';
+const MODAL_HEIGHT = height * 0.65;
 
 const QuestComponent = ({ 
   isVisible,
   questData,
   loading,
   error,
-  countdownEnd
+  countdownEnd,
+  questState,
+  onQuestComplete,
+  onQuestFailure,
+  onCooldownEnd
 }) => {
   if (!isVisible) {
     return null;
   }
 
   const [remainingTime, setRemainingTime] = useState('');
+  const [completedExercises, setCompletedExercises] = useState({});
+  const [showCompletionPopup, setShowCompletionPopup] = useState(false);
+  const [countdownActive, setCountdownActive] = useState(true);
+
+  useEffect(() => {
+    // Reset countdown active state when quest state changes
+    setCountdownActive(true);
+  }, [questState]);
 
   useEffect(() => {
     if (!countdownEnd) return;
 
-    const updateRemainingTime = () => {
-      const now = new Date();
-      const distance = countdownEnd.toDate() - now;
+    let hasTriggered = false; // Add flag to prevent multiple triggers
 
-      if (distance <= 0) {
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const end = countdownEnd.toDate();
+      const difference = end - now;
+
+      if (difference <= 0 && !hasTriggered) {
+        hasTriggered = true; // Set flag to prevent multiple triggers
         setRemainingTime('00:00:00');
-        // Trigger Quest Failure flow
-        console.log('Quest Failed');
+        setCountdownActive(false);
+        
+        // Handle quest state transition
+        if (questState === 'cooldown') {
+          onCooldownEnd();
+        } else if (questState === 'active') {
+          // Add a small delay before triggering quest failure
+          setTimeout(() => {
+            onQuestFailure();
+          }, 1000);
+        }
         return;
       }
 
-      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+      const hours = Math.floor(difference / (1000 * 60 * 60));
+      const minutes = Math.floor((difference / (1000 * 60)) % 60);
+      const seconds = Math.floor((difference / 1000) % 60);
 
       setRemainingTime(
-        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+        `${hours.toString().padStart(2, '0')}:${minutes
+          .toString()
+          .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
       );
     };
 
-    const intervalId = setInterval(updateRemainingTime, 1000);
-    updateRemainingTime(); // Initial call to set the time immediately
+    // Calculate immediately to avoid delay
+    calculateTimeLeft();
 
-    return () => clearInterval(intervalId);
-  }, [countdownEnd]);
+    const interval = setInterval(calculateTimeLeft, 1000);
+
+    return () => {
+      clearInterval(interval);
+      hasTriggered = false; // Reset flag on cleanup
+    };
+  }, [countdownEnd, questState, onCooldownEnd, onQuestFailure]);
+
+  const toggleExercise = (exerciseName) => {
+    if (questState === 'cooldown') return;
+    setCompletedExercises(prev => ({
+      ...prev,
+      [exerciseName]: !prev[exerciseName]
+    }));
+  };
+
+  const isQuestComplete = () => {
+    if (!questData || !questData.exercises) return false;
+    return questData.exercises.every(exercise => completedExercises[exercise.name]);
+  };
+
+  const handleCompleteQuest = () => {
+    if (isQuestComplete()) {
+      setCountdownActive(false);
+      setShowCompletionPopup(true);
+    }
+  };
+
+  const handleClaimRewards = () => {
+    setShowCompletionPopup(false);
+    setCountdownActive(true); // Reset countdown active state
+    onQuestComplete();
+  };
 
   const renderExercise = (exercise, index) => (
     <View key={index} style={styles.exerciseRow}>
-      <Text style={styles.exerciseName}>{exercise.name}</Text>
-      <Text style={styles.exerciseTotal}>[0/{exercise.total}]</Text>
+      <TouchableOpacity 
+        style={styles.checkbox}
+        onPress={() => toggleExercise(exercise.name)}
+        disabled={questState === 'cooldown'}
+      >
+        <View style={[
+          styles.checkboxInner,
+          completedExercises[exercise.name] && styles.checkboxChecked
+        ]}>
+          {completedExercises[exercise.name] && (
+            <Icons name="check" size={16} color="#3b82f6" />
+          )}
+        </View>
+      </TouchableOpacity>
+      <Text style={[
+        styles.exerciseName,
+        completedExercises[exercise.name] && styles.completedExercise
+      ]}>
+        {exercise.name}
+      </Text>
+      <Text style={[
+        styles.exerciseTotal,
+        completedExercises[exercise.name] && styles.completedExercise
+      ]}>
+        [{completedExercises[exercise.name] ? exercise.total : 0}/{exercise.total}]
+      </Text>
     </View>
   );
 
@@ -74,31 +158,58 @@ const QuestComponent = ({
     );
   };
 
+  if (questState === 'cooldown') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.modalContainer}>
+          <View style={styles.glowEffect} />
+          <View style={styles.modal}>
+            <View style={styles.titleContainer}>
+              <Icons name="info" size={24} color={NEON_COLOR} />
+              <Text style={styles.messageText}>QUEST COOLDOWN</Text>
+            </View>
+
+            <View style={styles.topBorderLine}>
+              <View style={styles.borderLineGlow} />
+            </View>
+
+            <View style={styles.contentContainer}>
+              <Text style={styles.cooldownMessage}>
+                My liege, your next quest unlocks in:
+              </Text>
+              <View style={styles.cooldownTimerContainer}>
+                <Icons name="clock" size={32} color={NEON_COLOR} />
+                <Text style={styles.cooldownTimer}>{remainingTime}</Text>
+              </View>
+            </View>
+
+            <View style={styles.bottomBorderLine}>
+              <View style={styles.borderLineGlow} />
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.modalContainer}>
-        {/* Outer glow effect */}
         <View style={styles.glowEffect} />
-
-        {/* Main modal */}
         <View style={styles.modal}>
-          {/* Message text above border line */}
           <View style={styles.titleContainer}>
-            <Icons name="info" size={24} color="#3b82f6" />
+            <Icons name="info" size={24} color={NEON_COLOR} />
             <Text style={styles.messageText}>DAILY QUEST</Text>
           </View>
 
-          {/* Top border line */}
           <View style={styles.topBorderLine}>
             <View style={styles.borderLineGlow} />
           </View>
 
-          {/* Content area */}
           <View style={styles.contentContainer}>
             {renderContent()}
           </View>
 
-          {/* Warning text */}
           <View style={styles.warningContainer}>
             <View style={styles.warningTextWrapper}>
               <View style={styles.warningFirstLine}>
@@ -109,24 +220,73 @@ const QuestComponent = ({
             </View>
           </View>
 
-          {/* Countdown timer below warning text */}
           <View style={styles.timerContainer}>
             <Icons name="clock" size={20} color="#ffffff" style={styles.clockIcon} />
             <Text style={styles.timerText}>{remainingTime}</Text>
           </View>
 
-          {/* Bottom border line */}
+          {isQuestComplete() && (
+            <TouchableOpacity 
+              style={styles.completeButton}
+              onPress={handleCompleteQuest}
+            >
+              <LinearGradient
+                colors={['#3b82f6', '#2563eb']}
+                style={styles.completeButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.completeButtonText}>COMPLETE QUEST</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.bottomBorderLine}>
             <View style={styles.borderLineGlow} />
           </View>
         </View>
       </View>
+
+      <Modal
+        visible={showCompletionPopup}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.popupOverlay}>
+          <View style={styles.popupContainer}>
+            <View style={styles.popupGlowEffect} />
+            <View style={styles.popupContent}>
+              <Text style={styles.popupTitle}>🎉 Quest Complete!</Text>
+              <View style={styles.rewardsContainer}>
+                <View style={styles.rewardItem}>
+                  <Icons name="star" size={24} color="#fbbf24" />
+                  <Text style={styles.rewardText}>+100 XP</Text>
+                </View>
+                <View style={styles.rewardItem}>
+                  <Icons name="coin" size={24} color="#fbbf24" />
+                  <Text style={styles.rewardText}>+100 Coins</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.claimButton}
+                onPress={handleClaimRewards}
+              >
+                <LinearGradient
+                  colors={['#3b82f6', '#2563eb']}
+                  style={styles.claimButtonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Text style={styles.claimButtonText}>Claim Rewards</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
-
-const NEON_COLOR = '#3b82f6'; // Blue
-const MODAL_HEIGHT = height * 0.65; // Increased from 0.6 to 0.65 (65% of screen height)
 
 const styles = StyleSheet.create({
   container: {
@@ -253,6 +413,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
+  checkbox: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxInner: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: NEON_COLOR,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#ffffff',
+  },
+  completedExercise: {
+    opacity: 0.5,
+    textDecorationLine: 'line-through',
+  },
   warningContainer: {
     position: 'absolute',
     bottom: 55,
@@ -293,6 +476,118 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 0,
+  },
+  completeButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    height: 50,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  completeButtonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  popupOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  popupContainer: {
+    width: width * 0.8,
+    maxWidth: 400,
+    position: 'relative',
+  },
+  popupGlowEffect: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    borderRadius: 8,
+    shadowColor: NEON_COLOR,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  popupContent: {
+    backgroundColor: '#000',
+    borderWidth: 2,
+    borderColor: NEON_COLOR,
+    borderRadius: 6,
+    padding: 24,
+    alignItems: 'center',
+  },
+  popupTitle: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  rewardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 24,
+  },
+  rewardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rewardText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  claimButton: {
+    width: '100%',
+    height: 50,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  claimButtonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  claimButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  cooldownMessage: {
+    color: '#ffffff',
+    fontSize: 20,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  cooldownTimerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  cooldownTimer: {
+    color: NEON_COLOR,
+    fontSize: 32,
+    fontWeight: 'bold',
   },
 });
 

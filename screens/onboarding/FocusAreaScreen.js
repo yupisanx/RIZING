@@ -68,6 +68,12 @@ const FocusAreaScreen = ({ navigation }) => {
         throw new Error('No authenticated user found');
       }
 
+      // Convert selectedAreas array to a map to avoid nested arrays
+      const focusAreasMap = selectedAreas.reduce((acc, area) => {
+        acc[area] = true;
+        return acc;
+      }, {});
+
       const playerData = {
         ...onboardingData,
         level: 1,
@@ -89,6 +95,7 @@ const FocusAreaScreen = ({ navigation }) => {
         hasCompletedOnboarding: true,
         isFirstTime: false,
         frequency: onboardingData.trainingDays,
+        focusAreas: focusAreasMap, // Store as a map instead of array
       };
 
       // Save to Firestore
