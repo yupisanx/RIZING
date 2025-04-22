@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Modal } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Modal, Image, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icons } from './Icons';
+import { theme } from '../utils/theme';
+import { Timestamp } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import { AntDesign } from '@expo/vector-icons';
+import ExerciseTable from './ExerciseTable';
+import { QuestStates } from '../utils/questStateManager';
 
 const { width, height } = Dimensions.get('window');
 const NEON_COLOR = '#3b82f6';
@@ -16,42 +22,53 @@ const QuestComponent = ({
   questState,
   onQuestComplete,
   onQuestFailure,
-  onCooldownEnd
+  onCooldownEnd,
+  route
 }) => {
   if (!isVisible) {
     return null;
   }
 
+  const navigation = useNavigation();
   const [remainingTime, setRemainingTime] = useState('');
   const [completedExercises, setCompletedExercises] = useState({});
   const [showCompletionPopup, setShowCompletionPopup] = useState(false);
   const [countdownActive, setCountdownActive] = useState(true);
+  const [hasTriggeredEnd, setHasTriggeredEnd] = useState(false);
+  const [rewards, setRewards] = useState(null);
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
-    // Reset countdown active state when quest state changes
+    if (route?.params?.completedExercises) {
+      setCompletedExercises(route.params.completedExercises);
+      navigation.setParams({ completedExercises: undefined });
+    }
+  }, [route?.params?.completedExercises]);
+
+  useEffect(() => {
+    // Reset states when quest state changes
     setCountdownActive(true);
+    setHasTriggeredEnd(false);
   }, [questState]);
 
   useEffect(() => {
-    if (!countdownEnd) return;
-
-    let hasTriggered = false; // Add flag to prevent multiple triggers
+    if (!countdownEnd) {
+      return;
+    }
 
     const calculateTimeLeft = () => {
       const now = new Date();
       const end = countdownEnd.toDate();
       const difference = end - now;
 
-      if (difference <= 0 && !hasTriggered) {
-        hasTriggered = true; // Set flag to prevent multiple triggers
+      if (difference <= 0 && !hasTriggeredEnd) {
+        setHasTriggeredEnd(true);
         setRemainingTime('00:00:00');
         setCountdownActive(false);
         
-        // Handle quest state transition
         if (questState === 'cooldown') {
           onCooldownEnd();
         } else if (questState === 'active') {
-          // Add a small delay before triggering quest failure
           setTimeout(() => {
             onQuestFailure();
           }, 1000);
@@ -59,84 +76,66 @@ const QuestComponent = ({
         return;
       }
 
-      const hours = Math.floor(difference / (1000 * 60 * 60));
-      const minutes = Math.floor((difference / (1000 * 60)) % 60);
-      const seconds = Math.floor((difference / 1000) % 60);
+      if (difference > 0) {
+        const hours = Math.floor(difference / (1000 * 60 * 60));
+        const minutes = Math.floor((difference / (1000 * 60)) % 60);
+        const seconds = Math.floor((difference / 1000) % 60);
 
-      setRemainingTime(
-        `${hours.toString().padStart(2, '0')}:${minutes
-          .toString()
-          .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-      );
+        setRemainingTime(
+          `${hours.toString().padStart(2, '0')}:${minutes
+            .toString()
+            .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        );
+      }
     };
 
-    // Calculate immediately to avoid delay
     calculateTimeLeft();
-
     const interval = setInterval(calculateTimeLeft, 1000);
-
+    
     return () => {
       clearInterval(interval);
-      hasTriggered = false; // Reset flag on cleanup
     };
-  }, [countdownEnd, questState, onCooldownEnd, onQuestFailure]);
-
-  const toggleExercise = (exerciseName) => {
-    if (questState === 'cooldown') return;
-    setCompletedExercises(prev => ({
-      ...prev,
-      [exerciseName]: !prev[exerciseName]
-    }));
-  };
+  }, [countdownEnd, questState, onCooldownEnd, onQuestFailure, hasTriggeredEnd]);
 
   const isQuestComplete = () => {
     if (!questData || !questData.exercises) return false;
     return questData.exercises.every(exercise => completedExercises[exercise.name]);
   };
 
-  const handleCompleteQuest = () => {
+  const animateFade = useCallback((toValue, callback) => {
+    Animated.timing(fadeAnim, {
+      toValue,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(callback);
+  }, [fadeAnim]);
+
+  const handleCompleteQuest = async () => {
     if (isQuestComplete()) {
       setCountdownActive(false);
-      setShowCompletionPopup(true);
+      const result = await onQuestComplete();
+      if (result.success) {
+        setRewards(result.rewards);
+        animateFade(1, () => {
+          setShowCompletionPopup(true);
+        });
+      }
     }
   };
 
   const handleClaimRewards = () => {
-    setShowCompletionPopup(false);
-    setCountdownActive(true); // Reset countdown active state
-    onQuestComplete();
+    animateFade(0, () => {
+      setShowCompletionPopup(false);
+      setCountdownActive(true);
+    });
   };
 
-  const renderExercise = (exercise, index) => (
-    <View key={index} style={styles.exerciseRow}>
-      <TouchableOpacity 
-        style={styles.checkbox}
-        onPress={() => toggleExercise(exercise.name)}
-        disabled={questState === 'cooldown'}
-      >
-        <View style={[
-          styles.checkboxInner,
-          completedExercises[exercise.name] && styles.checkboxChecked
-        ]}>
-          {completedExercises[exercise.name] && (
-            <Icons name="check" size={16} color="#3b82f6" />
-          )}
-        </View>
-      </TouchableOpacity>
-      <Text style={[
-        styles.exerciseName,
-        completedExercises[exercise.name] && styles.completedExercise
-      ]}>
-        {exercise.name}
-      </Text>
-      <Text style={[
-        styles.exerciseTotal,
-        completedExercises[exercise.name] && styles.completedExercise
-      ]}>
-        [{completedExercises[exercise.name] ? exercise.total : 0}/{exercise.total}]
-      </Text>
-    </View>
-  );
+  const handleExerciseComplete = (exerciseName) => {
+    setCompletedExercises(prev => ({
+      ...prev,
+      [exerciseName]: !prev[exerciseName]
+    }));
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -150,30 +149,26 @@ const QuestComponent = ({
     }
 
     return (
-      <View style={styles.exercisesContainer}>
-        {questData.exercises.map((exercise, index) => 
-          renderExercise(exercise, index)
-        )}
-      </View>
+      <ExerciseTable
+        exercises={questData.exercises}
+        completedExercises={completedExercises}
+        onExerciseComplete={handleExerciseComplete}
+      />
     );
   };
 
-  if (questState === 'cooldown') {
+  if (questState === QuestStates.COOLDOWN) {
     return (
       <View style={styles.container}>
-        <View style={styles.modalContainer}>
+        <Image 
+          source={require('../assets/images/assistant-avatar.png')}
+          style={styles.assistantImage}
+          resizeMode="contain"
+        />
+        <View style={[styles.modalContainer, styles.cooldownContainer]}>
           <View style={styles.glowEffect} />
-          <View style={styles.modal}>
-            <View style={styles.titleContainer}>
-              <Icons name="info" size={24} color={NEON_COLOR} />
-              <Text style={styles.messageText}>QUEST COOLDOWN</Text>
-            </View>
-
-            <View style={styles.topBorderLine}>
-              <View style={styles.borderLineGlow} />
-            </View>
-
-            <View style={styles.contentContainer}>
+          <View style={[styles.modal, styles.cooldownModal]}>
+            <View style={styles.cooldownContent}>
               <Text style={styles.cooldownMessage}>
                 My liege, your next quest unlocks in:
               </Text>
@@ -182,11 +177,8 @@ const QuestComponent = ({
                 <Text style={styles.cooldownTimer}>{remainingTime}</Text>
               </View>
             </View>
-
-            <View style={styles.bottomBorderLine}>
-              <View style={styles.borderLineGlow} />
-            </View>
           </View>
+          <View style={styles.speechBubbleTail} />
         </View>
       </View>
     );
@@ -194,7 +186,14 @@ const QuestComponent = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.modalContainer}>
+      <TouchableOpacity 
+        style={styles.modalContainer}
+        onPress={() => navigation.navigate('ExerciseTable', { 
+          questData,
+          initialCompletedExercises: completedExercises
+        })}
+        activeOpacity={0.8}
+      >
         <View style={styles.glowEffect} />
         <View style={styles.modal}>
           <View style={styles.titleContainer}>
@@ -207,6 +206,7 @@ const QuestComponent = ({
           </View>
 
           <View style={styles.contentContainer}>
+            <Text style={styles.goalText}>GOAL</Text>
             {renderContent()}
           </View>
 
@@ -214,45 +214,48 @@ const QuestComponent = ({
             <View style={styles.warningTextWrapper}>
               <View style={styles.warningFirstLine}>
                 <Text style={styles.warningRedText}>WARNING</Text>
-                <Text style={styles.warningWhiteText}> - FAILING TO COMPLETE</Text>
+                <Text style={styles.warningWhiteText}> - FAILING TO COMPLETE THIS</Text>
               </View>
-              <Text style={styles.warningWhiteText}>THIS DAILY QUEST WILL BRING A PENALTY</Text>
+              <View style={styles.warningSecondLine}>
+                <Text style={styles.warningWhiteText}>DAILY QUEST WILL BRING A </Text>
+                <Text style={styles.warningRedText}>PENALTY</Text>
+              </View>
             </View>
           </View>
 
           <View style={styles.timerContainer}>
-            <Icons name="clock" size={20} color="#ffffff" style={styles.clockIcon} />
+            <AntDesign name="clockcircle" size={20} color="#ffffff" style={styles.clockIcon} />
             <Text style={styles.timerText}>{remainingTime}</Text>
           </View>
-
-          {isQuestComplete() && (
-            <TouchableOpacity 
-              style={styles.completeButton}
-              onPress={handleCompleteQuest}
-            >
-              <LinearGradient
-                colors={['#3b82f6', '#2563eb']}
-                style={styles.completeButtonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.completeButtonText}>COMPLETE QUEST</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
 
           <View style={styles.bottomBorderLine}>
             <View style={styles.borderLineGlow} />
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
+
+      {isQuestComplete() && (
+        <TouchableOpacity 
+          style={styles.completeButton}
+          onPress={handleCompleteQuest}
+        >
+          <LinearGradient
+            colors={['#3b82f6', '#2563eb']}
+            style={styles.completeButtonGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={styles.completeButtonText}>COMPLETE QUEST</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
 
       <Modal
         visible={showCompletionPopup}
         transparent={true}
         animationType="fade"
       >
-        <View style={styles.popupOverlay}>
+        <Animated.View style={[styles.popupOverlay, { opacity: fadeAnim }]}>
           <View style={styles.popupContainer}>
             <View style={styles.popupGlowEffect} />
             <View style={styles.popupContent}>
@@ -260,11 +263,15 @@ const QuestComponent = ({
               <View style={styles.rewardsContainer}>
                 <View style={styles.rewardItem}>
                   <Icons name="star" size={24} color="#fbbf24" />
-                  <Text style={styles.rewardText}>+100 XP</Text>
+                  <Text style={styles.rewardText}>+{rewards?.xp || 0} XP</Text>
                 </View>
                 <View style={styles.rewardItem}>
                   <Icons name="coin" size={24} color="#fbbf24" />
-                  <Text style={styles.rewardText}>+100 Coins</Text>
+                  <Text style={styles.rewardText}>+{rewards?.coins || 0} Coins</Text>
+                </View>
+                <View style={styles.rewardItem}>
+                  <Icons name="stats" size={24} color="#fbbf24" />
+                  <Text style={styles.rewardText}>+{rewards?.statPoints || 0} Stat Points</Text>
                 </View>
               </View>
               <TouchableOpacity 
@@ -272,17 +279,17 @@ const QuestComponent = ({
                 onPress={handleClaimRewards}
               >
                 <LinearGradient
-                  colors={['#3b82f6', '#2563eb']}
+                  colors={['#10b981', '#059669']}
                   style={styles.claimButtonGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                 >
-                  <Text style={styles.claimButtonText}>Claim Rewards</Text>
+                  <Text style={styles.claimButtonText}>CLAIM REWARDS</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </Modal>
     </View>
   );
@@ -291,8 +298,11 @@ const QuestComponent = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    justifyContent: 'center',
+    height: '100%',
+    justifyContent: 'flex-start',
     alignItems: 'center',
+    backgroundColor: 'transparent',
+    marginTop: -35,
   },
   modalContainer: {
     width: width * 0.85,
@@ -306,7 +316,7 @@ const styles = StyleSheet.create({
     left: -4,
     right: -4,
     bottom: -4,
-    borderRadius: 4,
+    borderRadius: 24,
     shadowColor: NEON_COLOR,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
@@ -328,25 +338,22 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   titleContainer: {
-    position: 'absolute',
-    top: 10,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    zIndex: 1,
+    justifyContent: 'center',
+    paddingTop: 10,
+    marginTop: -20,
+    marginBottom: 5,
   },
   messageText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    color: '#ffffff',
+    fontSize: 16,
+    fontFamily: 'PressStart2P',
+    marginLeft: 10,
   },
   topBorderLine: {
     position: 'absolute',
-    top: 60,
+    top: 45,
     left: 15,
     right: 15,
     height: 0.5,
@@ -356,7 +363,7 @@ const styles = StyleSheet.create({
   },
   bottomBorderLine: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 120,
     left: 15,
     right: 15,
     height: 0.5,
@@ -377,13 +384,14 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   contentContainer: {
-    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 80,
-    paddingBottom: 80,
+    flex: 1,
+    paddingTop: 40,
+    paddingTop: 20,
   },
   exercisesContainer: {
-    gap: 12,
+    gap: 4,
   },
   exerciseRow: {
     flexDirection: 'row',
@@ -393,30 +401,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   exerciseName: {
+    ...theme.typography.body,
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
     flex: 1,
   },
+  exerciseRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   exerciseTotal: {
+    ...theme.typography.caption,
     color: NEON_COLOR,
-    fontSize: 14,
-    fontWeight: '600',
+    marginRight: 12,
   },
   loadingText: {
+    ...theme.typography.body,
     color: NEON_COLOR,
-    fontSize: 16,
     textAlign: 'center',
   },
   errorText: {
+    ...theme.typography.body,
     color: '#ef4444',
-    fontSize: 16,
     textAlign: 'center',
   },
   checkbox: {
     width: 24,
     height: 24,
-    marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -430,7 +440,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
   },
   completedExercise: {
     opacity: 0.5,
@@ -438,7 +448,7 @@ const styles = StyleSheet.create({
   },
   warningContainer: {
     position: 'absolute',
-    bottom: 55,
+    bottom: 70,
     left: 15,
     right: 15,
     alignItems: 'center',
@@ -452,39 +462,51 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   warningRedText: {
+    ...theme.typography.caption,
     color: '#ef4444',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 9,
+    lineHeight: 13,
   },
   warningWhiteText: {
+    ...theme.typography.caption,
     color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 8,
+    lineHeight: 11,
+  },
+  warningSecondLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 0,
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    right: 0,
   },
   clockIcon: {
-    marginRight: 5,
+    marginRight: 12,
   },
   timerText: {
+    ...theme.typography.h3,
     color: '#ffffff',
-    fontSize: 20,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 0,
+    fontSize: 16,
   },
   completeButton: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 40,
     left: 20,
     right: 20,
     height: 50,
-    borderRadius: 4,
+    borderRadius: 8,
     overflow: 'hidden',
+    zIndex: 999,
   },
   completeButtonGradient: {
     flex: 1,
@@ -493,11 +515,8 @@ const styles = StyleSheet.create({
   },
   completeButtonText: {
     color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    fontSize: 14,
+    fontFamily: 'PressStart2P',
   },
   popupOverlay: {
     flex: 1,
@@ -532,10 +551,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   popupTitle: {
+    ...theme.typography.h1,
     color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    textAlign: 'center',
+    fontSize: 20,
   },
   rewardsContainer: {
     flexDirection: 'row',
@@ -549,9 +568,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rewardText: {
+    ...theme.typography.h3,
     color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 14,
   },
   claimButton: {
     width: '100%',
@@ -565,29 +584,102 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   claimButtonText: {
+    ...theme.typography.h3,
     color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  cooldownContainer: {
+    width: width * 0.5,
+    height: width * 0.35,
+    backgroundColor: 'transparent',
+    position: 'relative',
+    zIndex: 1,
+    borderRadius: 16,
+    overflow: 'visible',
+    marginTop: -20,
+    alignSelf: 'flex-start',
+    marginLeft: 10,
+  },
+  cooldownModal: {
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderWidth: 1.5,
+    borderColor: NEON_COLOR,
+    borderRadius: 16,
+    padding: 15,
+    position: 'relative',
+    shadowColor: NEON_COLOR,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 14,
+    elevation: 8,
+    height: '100%',
+    width: '100%',
+  },
+  cooldownContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+    paddingVertical: 7,
   },
   cooldownMessage: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 10,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    fontFamily: 'PressStart2P',
+    paddingHorizontal: 7,
   },
   cooldownTimerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 8,
   },
   cooldownTimer: {
     color: NEON_COLOR,
-    fontSize: 32,
+    fontSize: 17,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
+  },
+  speechBubbleTail: {
+    position: 'absolute',
+    bottom: -10,
+    left: 22,
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 0,
+    borderTopWidth: 14,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: 'rgba(0, 0, 0, 0.9)',
+    transform: [{ translateY: -3 }],
+  },
+  goalText: {
+    ...theme.typography.h1,
+    color: '#ffffff',
+    marginBottom: 15,
+    marginTop: 10,
+    textAlign: 'center',
+    fontSize: 20,
+  },
+  assistantImage: {
+    position: 'absolute',
+    width: width * 1.6,
+    height: width * 1.6,
+    opacity: 1,
+    top: '60%',
+    left: '50%',
+    transform: [
+      { translateX: -(width * 0.8) },
+      { translateY: -(width * 0.8) }
+    ],
+    zIndex: 1,
   },
 });
 
