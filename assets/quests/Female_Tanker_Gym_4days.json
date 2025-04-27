@@ -9,145 +9,169 @@
       "focus": "Full Body",
       "exercises": [
         {
-          "name": "Skaters",
+          "name": "Mountain Climbers",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 76
+        },
+        {
+          "name": "Jumping Jacks",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 66
         },
         {
           "name": "High Knees",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 89
+        },
+        {
+          "name": "Skaters",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 77
         },
         {
           "name": "Plank to Push",
           "sets": 3,
           "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Lunge to Knee Drive",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Squat to Press",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 120
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 428
     },
     "day2": {
       "focus": "Legs",
       "exercises": [
         {
-          "name": "Sumo Squats",
+          "name": "Step-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 110
+        },
+        {
+          "name": "Jump Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 116
+        },
+        {
+          "name": "Bulgarian Split Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 119
         },
         {
           "name": "Wall Sit",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 119
         },
         {
-          "name": "Bodyweight Squats",
+          "name": "Sumo Squats",
           "sets": 3,
           "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Step-ups",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Side Lunges",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 112
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 576
     },
     "day3": {
       "focus": "Core",
       "exercises": [
         {
-          "name": "Mountain Climbers",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
-        },
-        {
-          "name": "Plank Jacks",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
-        },
-        {
-          "name": "Sit-ups",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
-        },
-        {
           "name": "Bicycle Crunches",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 138
+        },
+        {
+          "name": "Side Plank Dips",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 126
+        },
+        {
+          "name": "Mountain Climbers",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 70
+        },
+        {
+          "name": "Leg Raises",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 140
         },
         {
           "name": "V-Ups",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 150
         }
       ],
-      "total_reps_all_exercises": 300
+      "total_reps_all_exercises": 300,
+      "day_total_estimated_time_seconds": 624
     },
     "day4": {
       "focus": "Upper Body",
       "exercises": [
         {
-          "name": "Push-ups",
+          "name": "Shoulder Press (Band)",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 95
         },
         {
           "name": "Pike Push-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 117
         },
         {
-          "name": "T-Push-ups",
+          "name": "Push-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 96
         },
         {
           "name": "Incline Push-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 105
         },
         {
-          "name": "Shoulder Press (Band)",
+          "name": "T-Push-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 107
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 520
     }
   }
 }

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform, Dimension
 import { Icons } from './Icons';
 import { useMenu } from '../contexts/MenuContext';
 import { useAuth } from '../contexts/AuthContext';
+import { theme } from '../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -89,9 +90,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   menuTitle: {
+    ...theme.typography.h2,
     color: '#ffffff',
-    fontSize: 20,
-    fontWeight: 'bold',
     textAlign: 'center',
     flex: 1,
     marginRight: 48,
@@ -103,8 +103,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(216, 180, 254, 0.1)',
   },
   emailText: {
+    ...theme.typography.body,
     color: '#60a5fa',
-    fontSize: 16,
     opacity: 0.9,
   },
   logoutButton: {
@@ -119,8 +119,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutText: {
+    ...theme.typography.body,
     color: '#60a5fa',
-    fontSize: 16,
     fontWeight: '500',
     marginRight: 12,
   },

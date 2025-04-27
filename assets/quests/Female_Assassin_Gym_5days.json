@@ -9,181 +9,211 @@
       "focus": "Glutes & Core",
       "exercises": [
         {
+          "name": "Leg Raises",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 137
+        },
+        {
+          "name": "Glute Bridges",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 110
+        },
+        {
+          "name": "Toe Touches",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 121
+        },
+        {
+          "name": "Single-Leg Glute Bridge",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 94
+        },
+        {
           "name": "Side Plank with Reach",
           "sets": 3,
           "reps": 20,
-          "total": 60
-        },
-        {
-          "name": "Glute Kickbacks",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
-        },
-        {
-          "name": "Plank",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
-        },
-        {
-          "name": "Plank Hip Dips",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
-        },
-        {
-          "name": "V-Ups",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 137
         }
       ],
-      "total_reps_all_exercises": 300
+      "total_reps_all_exercises": 300,
+      "day_total_estimated_time_seconds": 599
     },
     "day2": {
       "focus": "Legs",
       "exercises": [
         {
-          "name": "Jump Squats",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Side Lunges",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
           "name": "Glute Bridges",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 111
         },
         {
-          "name": "Bulgarian Split Squats",
+          "name": "Step-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 99
         },
         {
-          "name": "Walking Lunges",
+          "name": "Bodyweight Squats",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 91
+        },
+        {
+          "name": "Jump Squats",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 114
+        },
+        {
+          "name": "Wall Sit",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 92
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 507
     },
     "day3": {
       "focus": "Core",
       "exercises": [
         {
+          "name": "Side Plank Dips",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 141
+        },
+        {
+          "name": "Toe Touches",
+          "sets": 3,
+          "reps": 20,
+          "total": 60,
+          "estimated_time_seconds": 141
+        },
+        {
           "name": "V-Ups",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 142
         },
         {
           "name": "Mountain Climbers",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 82
         },
         {
-          "name": "Side Plank Dips",
+          "name": "Flutter Kicks",
           "sets": 3,
           "reps": 20,
-          "total": 60
-        },
-        {
-          "name": "Plank",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
-        },
-        {
-          "name": "Plank Jacks",
-          "sets": 3,
-          "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 147
         }
       ],
-      "total_reps_all_exercises": 300
+      "total_reps_all_exercises": 300,
+      "day_total_estimated_time_seconds": 653
     },
     "day4": {
       "focus": "Back",
       "exercises": [
         {
-          "name": "Table Rows",
+          "name": "Bird Dog Hold + Row",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 96
         },
         {
-          "name": "Resistance Band Rows",
+          "name": "Prone Y-Raise",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 98
         },
         {
-          "name": "Rear Delt Raises",
+          "name": "Wall Pulls",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 115
         },
         {
           "name": "Back Extensions",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 96
         },
         {
-          "name": "Superman Pull",
+          "name": "Bent Over Rows",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 110
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 515
     },
     "day5": {
       "focus": "Full Body",
       "exercises": [
         {
-          "name": "Skaters",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Lunge to Knee Drive",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Inchworm to Push-up",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
           "name": "Jumping Jacks",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 84
         },
         {
           "name": "Mountain Climbers",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 64
+        },
+        {
+          "name": "Inchworm to Push-up",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 69
+        },
+        {
+          "name": "Plank to Push",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 133
+        },
+        {
+          "name": "Push-ups",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 103
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 453
     }
   }
 }

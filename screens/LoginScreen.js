@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../utils/theme';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -194,30 +195,25 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    ...theme.typography.h1,
+    marginBottom: 20,
     color: '#60a5fa',
     textAlign: 'center',
-    marginBottom: 25,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    textShadowColor: '#60a5fa',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    width: '100%',
   },
   inputContainer: {
     width: '100%',
     marginBottom: 15,
   },
   input: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
+    ...theme.typography.body,
+    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+    borderRadius: 8,
     padding: 12,
-    marginBottom: 12,
-    color: '#60a5fa',
+    marginBottom: 8,
+    color: '#ffffff',
     borderWidth: 1,
-    borderColor: 'rgba(96, 165, 250, 0.2)',
-    fontSize: 16,
+    borderColor: 'rgba(96, 165, 250, 0.3)',
   },
   passwordContainer: {
     position: 'relative',
@@ -237,8 +233,8 @@ const styles = StyleSheet.create({
     marginTop: -5,
   },
   forgotPasswordText: {
+    ...theme.typography.body,
     color: '#60a5fa',
-    fontSize: 14,
   },
   loginButton: {
     backgroundColor: '#60a5fa',
@@ -248,8 +244,8 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   loginButtonText: {
-    color: '#000000',
-    fontSize: 16,
+    ...theme.typography.h3,
+    color: '#ffffff',
     fontWeight: 'bold',
   },
   signupLink: {
@@ -257,8 +253,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signupText: {
+    ...theme.typography.body,
     color: '#6b7280',
-    fontSize: 14,
   },
   signupTextBold: {
     color: '#60a5fa',
@@ -268,9 +264,10 @@ const styles = StyleSheet.create({
     borderColor: '#ff0000',
   },
   errorText: {
-    color: '#ff0000',
+    ...theme.typography.body,
+    color: '#ff4444',
+    marginBottom: 5,
     fontSize: 12,
-    marginTop: 5,
   },
   submitError: {
     textAlign: 'left',

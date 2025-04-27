@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Dimensions, Platform, ScrollView, Text, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QuestComponent from '../components/QuestComponent';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc, updateDoc, Timestamp, increment } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import buildQuestFilename from '../quest_filename_builder';
-import questMap from '../assets/quests/questMap';
+import { useQuest } from '../hooks/useQuest';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
@@ -18,208 +15,59 @@ const STATUS_BAR_HEIGHT = Platform.select({
   android: 24,
 });
 
-export default function QuestScreen() {
+/**
+ * QuestScreen component that displays the current quest and handles quest-related operations
+ * @returns {JSX.Element} The quest screen component
+ */
+export default function QuestScreen({ route }) {
   const insets = useSafeAreaInsets();
-  const [questModalVisible, setQuestModalVisible] = useState(true);
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [todayQuest, setTodayQuest] = useState(null);
-  const [error, setError] = useState(null);
-  const [countdownEnd, setCountdownEnd] = useState(null);
-  const [questState, setQuestState] = useState('active');
-
-  const loadTodayQuest = useCallback(async (forceReload = false) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (!userDoc.exists()) {
-        throw new Error('No user data found');
-      }
-
-      const playerData = userDoc.data();
-      
-      // If not forcing reload and in cooldown, just update countdown
-      if (!forceReload && playerData.questState === 'cooldown') {
-        setQuestState('cooldown');
-        setCountdownEnd(playerData.countdownEnd);
-        setLoading(false);
-        return;
-      }
-
-      const questFilename = buildQuestFilename(
-        playerData.gender || 'Male',
-        playerData.class || 'Tanker',
-        playerData.environment || 'Gym',
-        playerData.trainingDays || 5
-      );
-
-      const questData = questMap[questFilename];
-      if (!questData) {
-        throw new Error(`Quest not found: ${questFilename}`);
-      }
-
-      if (!questData.plan || typeof questData.plan !== 'object') {
-        throw new Error('Invalid quest plan structure');
-      }
-
-      const dayKeys = Object.keys(questData.plan);
-      if (dayKeys.length === 0) {
-        throw new Error('No days available in quest plan');
-      }
-
-      // Get the current day index (0-based)
-      const currentDayIndex = Math.floor((Date.now() - playerData.lastQuestGeneratedAt?.toDate().getTime() || Date.now()) / (24 * 60 * 60 * 1000));
-      const safeQuestIndex = currentDayIndex % dayKeys.length;
-
-      // Only increment index if we're forcing a reload and not in cooldown
-      let nextQuestIndex = playerData.currentQuestIndex || 0;
-      if (forceReload && playerData.questState !== 'cooldown') {
-        nextQuestIndex = (nextQuestIndex + 1) % dayKeys.length;
-      }
-
-      const todayQuestData = questData.plan[dayKeys[nextQuestIndex]];
-      if (!todayQuestData) {
-        throw new Error(`No quest data for day ${dayKeys[nextQuestIndex]}`);
-      }
-
-      // Only update state if quest data has changed
-      if (JSON.stringify(todayQuest) !== JSON.stringify(todayQuestData)) {
-        setTodayQuest(todayQuestData);
-      }
-
-      const countdownEndTimestamp = playerData.countdownEnd || Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-      setCountdownEnd(countdownEndTimestamp);
-
-      // Only update Firestore if necessary
-      if (nextQuestIndex !== playerData.currentQuestIndex || 
-          playerData.questState !== 'active' ||
-          forceReload) {
-        await updateDoc(doc(db, 'users', user.uid), {
-          activeQuest: todayQuestData,
-          countdownEnd: countdownEndTimestamp,
-          lastQuestGeneratedAt: Timestamp.now(),
-          questState: 'active',
-          currentQuestIndex: nextQuestIndex
-        });
-      }
-    } catch (error) {
-      console.error('Error loading quest:', error);
-      setError(error.message);
-      try {
-        await updateDoc(doc(db, 'users', user.uid), {
-          currentQuestIndex: 0,
-          questState: 'active',
-          lastQuestGeneratedAt: Timestamp.now()
-        });
-      } catch (resetError) {
-        console.error('Error resetting quest index:', resetError);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [user, todayQuest]);
+  const {
+    loading,
+    error,
+    todayQuest,
+    countdownEnd,
+    questState,
+    loadTodayQuest,
+    handleQuestComplete,
+    handleQuestFailure,
+    handleExpiredQuest
+  } = useQuest(user?.uid);
 
   useEffect(() => {
-    if (user?.uid) {
-      loadTodayQuest();
-    }
+    const loadQuest = async () => {
+      if (user?.uid) {
+        await loadTodayQuest();
+      }
+    };
+
+    loadQuest();
   }, [user, loadTodayQuest]);
 
-  const handleQuestComplete = async () => {
-    try {
-      const countdownEndTimestamp = Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-      await updateDoc(doc(db, 'users', user.uid), {
-        questState: 'cooldown',
-        countdownEnd: countdownEndTimestamp,
-        xp: increment(100),
-        coins: increment(100),
-        streak: increment(1)
-      });
-      setQuestState('cooldown');
-      setCountdownEnd(countdownEndTimestamp);
-    } catch (error) {
-      console.error('Error completing quest:', error);
+  const handleCompletePress = async () => {
+    const result = await handleQuestComplete();
+    if (result.success) {
+      Alert.alert(
+        "Quest Completed!",
+        `You have successfully completed your quest!\n\nRewards:\n- +100 XP\n- +100 Coins\n- +3 Stat Points\n\nNext quest unlocks in ${result.remainingHours} hours.`,
+        [{ text: "OK" }]
+      );
+    } else {
+      Alert.alert(
+        "Error",
+        "Failed to complete quest. Please try again.",
+        [{ text: "OK" }]
+      );
     }
   };
 
-  const handleQuestFailure = async () => {
-    try {
-      // First get the current user data
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const playerData = userDoc.data();
-      
-      // Get next quest data
-      const questFilename = buildQuestFilename(
-        playerData.gender || 'Male',
-        playerData.class || 'Tanker',
-        playerData.environment || 'Gym',
-        playerData.trainingDays || 5
-      );
-      
-      const dayKeys = Object.keys(questMap[questFilename].plan);
-      const nextDayIndex = (playerData.currentQuestIndex + 1) % dayKeys.length;
-      const nextQuestData = questMap[questFilename].plan[dayKeys[nextDayIndex]];
-
-      // Set up new countdown
-      const countdownEndTimestamp = Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-
-      // Get current stats from the stats map
-      const currentStats = playerData.stats || {
-        strength: 0,
-        vitality: 0,
-        agility: 0,
-        intelligence: 0,
-        sense: 0
-      };
-
-      // Prepare the update object
-      const updateData = {
-        // Reset streak to 0
-        streak: 0,
-        // Update quest state
-        questState: 'active',
-        currentQuestIndex: nextDayIndex,
-        activeQuest: nextQuestData,
-        countdownEnd: countdownEndTimestamp,
-        lastQuestGeneratedAt: Timestamp.now(),
-        // Update stats map with decremented values
-        stats: {
-          ...currentStats,
-          strength: Math.max(0, currentStats.strength - 1),
-          vitality: Math.max(0, currentStats.vitality - 1),
-          agility: Math.max(0, currentStats.agility - 1),
-          intelligence: Math.max(0, currentStats.intelligence - 1),
-          sense: Math.max(0, currentStats.sense - 1)
-        }
-      };
-
-      // Remove any duplicate stats from root level
-      const statsToRemove = {
-        strength: null,
-        vitality: null,
-        agility: null,
-        intelligence: null,
-        sense: null
-      };
-
-      // Update Firestore with all changes
-      await updateDoc(doc(db, 'users', user.uid), {
-        ...updateData,
-        ...statsToRemove
-      });
-
-      // Update local state
-      setCountdownEnd(countdownEndTimestamp);
-      setQuestState('active');
-      setTodayQuest(nextQuestData);
-
-      // Show penalty message with details only if we haven't shown it recently
+  const handleFailurePress = async () => {
+    const result = await handleQuestFailure();
+    if (result.success) {
       const lastPenaltyAlert = await AsyncStorage.getItem('@last_penalty_alert');
       const now = Date.now();
       
-      if (!lastPenaltyAlert || (now - parseInt(lastPenaltyAlert)) > 5000) { // 5 second cooldown
+      if (!lastPenaltyAlert || (now - parseInt(lastPenaltyAlert)) > 5000) {
         await AsyncStorage.setItem('@last_penalty_alert', now.toString());
         Alert.alert(
           "Quest Failed",
@@ -229,9 +77,7 @@ export default function QuestScreen() {
           [{ text: "OK" }]
         );
       }
-
-    } catch (error) {
-      console.error('Error handling quest failure:', error);
+    } else {
       Alert.alert(
         "Error",
         "Failed to process quest failure. Please try again.",
@@ -240,84 +86,55 @@ export default function QuestScreen() {
     }
   };
 
-  const handleCooldownEnd = async () => {
-    try {
-      // Get current user data
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const playerData = userDoc.data();
-
-      // Calculate next quest index
-      const questFilename = buildQuestFilename(
-        playerData.gender || 'Male',
-        playerData.class || 'Tanker',
-        playerData.environment || 'Gym',
-        playerData.trainingDays || 5
-      );
-      
-      const dayKeys = Object.keys(questMap[questFilename].plan);
-      const nextDayIndex = (playerData.currentQuestIndex + 1) % dayKeys.length;
-      const nextQuestData = questMap[questFilename].plan[dayKeys[nextDayIndex]];
-
-      // Set up new countdown
-      const countdownEndTimestamp = Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-
-      // Update Firestore
-      await updateDoc(doc(db, 'users', user.uid), {
-        questState: 'active',
-        currentQuestIndex: nextDayIndex,
-        activeQuest: nextQuestData,
-        countdownEnd: countdownEndTimestamp,
-        lastQuestGeneratedAt: Timestamp.now()
-      });
-
-      // Update local state
-      setQuestState('active');
-      setCountdownEnd(countdownEndTimestamp);
-      setTodayQuest(nextQuestData);
-
-    } catch (error) {
-      console.error('Error handling cooldown end:', error);
-      Alert.alert(
-        "Error",
-        "Failed to process cooldown end. Please try again.",
-        [{ text: "OK" }]
-      );
-    }
-  };
-
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#000000', '#000000', '#000000']}
-        locations={[0, 0.7, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[StyleSheet.absoluteFill]}
+        colors={['rgba(0,0,0,0.8)', 'transparent']}
+        style={styles.headerGradient}
       />
-      
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        bounces={true}
-        showsVerticalScrollIndicator={true}
-      >
-        <View style={styles.contentWrapper}>
-          <View style={styles.modalWrapper}>
-            <QuestComponent 
-              isVisible={questModalVisible}
-              questData={todayQuest}
-              loading={loading}
-              error={error}
-              countdownEnd={countdownEnd}
-              questState={questState}
-              onQuestComplete={handleQuestComplete}
-              onQuestFailure={handleQuestFailure}
-              onCooldownEnd={handleCooldownEnd}
-            />
-          </View>
-          <View style={styles.extraSpace} />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading quest data...</Text>
         </View>
-      </ScrollView>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error: {error}</Text>
+        </View>
+      ) : questState === 'cooldown' ? (
+        <View style={styles.cooldownWrapper}>
+          <QuestComponent
+            isVisible={true}
+            questData={todayQuest}
+            loading={loading}
+            error={error}
+            countdownEnd={countdownEnd}
+            questState={questState}
+            onQuestComplete={handleCompletePress}
+            onQuestFailure={handleFailurePress}
+            onCooldownEnd={handleExpiredQuest}
+            route={route}
+          />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <QuestComponent
+            isVisible={true}
+            questData={todayQuest}
+            loading={loading}
+            error={error}
+            countdownEnd={countdownEnd}
+            questState={questState}
+            onQuestComplete={handleCompletePress}
+            onQuestFailure={handleFailurePress}
+            onCooldownEnd={handleExpiredQuest}
+            route={route}
+          />
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -325,25 +142,51 @@ export default function QuestScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#000',
+  },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
+    zIndex: 1,
+  },
+  cooldownWrapper: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
+    paddingBottom: SCREEN_PADDING,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
+    paddingBottom: 200,
   },
-  contentWrapper: {
-    minHeight: height * 1.2,
-  },
-  modalWrapper: {
-    height: height * 0.6,
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SCREEN_PADDING,
-    paddingTop: height * 0.1 + 250,
+    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
   },
-  extraSpace: {
-    height: height * 0.2,
-  }
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
+  },
+  loadingText: {
+    color: '#fff',
+    textAlign: 'center',
+    marginTop: 20,
+    fontFamily: 'PressStart2P',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
+    fontFamily: 'PressStart2P',
+  },
 }); 

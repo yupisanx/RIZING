@@ -41,27 +41,29 @@ export const theme = {
   },
   typography: {
     h1: {
-      fontSize: getResponsiveFontSize(24),
-      fontWeight: 'bold',
-      lineHeight: getResponsiveFontSize(32),
+      fontSize: getResponsiveFontSize(18),
+      fontFamily: 'PressStart2P',
+      lineHeight: getResponsiveFontSize(24),
     },
     h2: {
-      fontSize: getResponsiveFontSize(20),
-      fontWeight: 'bold',
-      lineHeight: getResponsiveFontSize(28),
+      fontSize: getResponsiveFontSize(16),
+      fontFamily: 'PressStart2P',
+      lineHeight: getResponsiveFontSize(22),
     },
     h3: {
-      fontSize: getResponsiveFontSize(18),
-      fontWeight: 'bold',
-      lineHeight: getResponsiveFontSize(24),
+      fontSize: getResponsiveFontSize(14),
+      fontFamily: 'PressStart2P',
+      lineHeight: getResponsiveFontSize(20),
     },
     body: {
-      fontSize: getResponsiveFontSize(16),
-      lineHeight: getResponsiveFontSize(24),
+      fontSize: getResponsiveFontSize(12),
+      fontFamily: 'PressStart2P',
+      lineHeight: getResponsiveFontSize(18),
     },
     caption: {
-      fontSize: getResponsiveFontSize(14),
-      lineHeight: getResponsiveFontSize(20),
+      fontSize: getResponsiveFontSize(10),
+      fontFamily: 'PressStart2P',
+      lineHeight: getResponsiveFontSize(16),
     },
   },
   shadows: {

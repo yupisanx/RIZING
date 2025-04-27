@@ -38,12 +38,19 @@ export function useQuest(userId) {
         const originalEnd = userData.countdownEnd?.toMillis() || now;
         const currentState = userData.questState || QuestStates.ACTIVE;
 
-        // Handle expired quests
+        // Handle expired quests with correct catch-up logic
         if (now > originalEnd) {
-          const missedDays = Math.floor((now - originalEnd) / (24 * 60 * 60 * 1000));
+          let missed = 0;
+          let newEnd = originalEnd;
           
-          if (missedDays > 0) {
-            // Use transaction to safely update state
+          // Calculate exact number of missed periods
+          while (newEnd <= now) {
+            missed++;
+            newEnd += 24 * 60 * 60 * 1000;
+          }
+
+          if (missed > 0) {
+            // Use transaction to safely update state and generate new quest
             await runTransaction(db, async (transaction) => {
               const userDoc = await transaction.get(userRef);
               if (!userDoc.exists()) {
@@ -51,42 +58,73 @@ export function useQuest(userId) {
               }
 
               const userData = userDoc.data();
-              const newEnd = originalEnd + (missedDays * 24 * 60 * 60 * 1000);
-              const newQuestIndex = (userData.currentQuestIndex + missedDays) % Object.keys(questMap[buildQuestFilename(
+              
+              // Calculate new quest index
+              const questFilename = buildQuestFilename(
                 userData.gender || 'Male',
                 userData.class || 'Tanker',
                 userData.environment || 'Gym',
                 userData.trainingDays || 5
-              )].plan).length;
+              );
+              
+              if (!questMap[questFilename]) {
+                throw new Error(`Quest not found: ${questFilename}`);
+              }
+
+              const quest = questMap[questFilename];
+              const dayKeys = Object.keys(quest.plan);
+              const newQuestIndex = (userData.currentQuestIndex + missed) % dayKeys.length;
+              const dayData = quest.plan[dayKeys[newQuestIndex]];
+              const questData = formatQuestData(dayData);
+
+              if (!questData) {
+                throw new Error('Failed to format quest data');
+              }
 
               // Apply penalties if quest was active
               let stats = userData.stats || {};
               if (currentState === QuestStates.ACTIVE) {
-                stats = await QuestStateManager.calculatePenalties(missedDays, stats);
+                // Apply penalties for each missed day
+                for (let i = 0; i < missed; i++) {
+                  stats = await QuestStateManager.calculatePenalties(1, stats);
+                }
               }
 
+              // Update all state in one transaction
               transaction.update(userRef, {
                 questState: QuestStates.ACTIVE,
                 countdownEnd: Timestamp.fromMillis(newEnd),
                 currentQuestIndex: newQuestIndex,
                 stats: stats,
                 streak: currentState === QuestStates.ACTIVE ? 0 : userData.streak,
-                lastQuestGeneratedAt: Timestamp.now()
+                lastQuestGeneratedAt: Timestamp.now(),
+                activeQuest: questData
               });
+
+              // Update local state
+              setQuestState(QuestStates.ACTIVE);
+              setCountdownEnd(Timestamp.fromMillis(newEnd));
+              setTodayQuest(questData);
             });
 
-            // Update local state
-            setQuestState(QuestStates.ACTIVE);
-            setCountdownEnd(Timestamp.fromMillis(originalEnd + (missedDays * 24 * 60 * 60 * 1000)));
+            // Show penalty alert
+            Alert.alert(
+              "Quest Expired",
+              `You missed ${missed} day${missed > 1 ? 's' : ''} of quests.\nPenalties have been applied.\nYour next quest is ready!`,
+              [{ text: "OK" }]
+            );
           }
         } else {
           // No expiration, just set the states
           setQuestState(currentState);
           setCountdownEnd(userData.countdownEnd);
+          setTodayQuest(userData.activeQuest);
         }
       } catch (error) {
         console.error('Error loading initial state:', error);
         setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -160,7 +198,7 @@ export function useQuest(userId) {
           throw new Error('User document does not exist');
         }
 
-        const userData = userDoc.data();
+      const userData = userDoc.data();
         const serverTime = Timestamp.now().toMillis();
         const currentState = userData.questState || QuestStates.ACTIVE;
         const countdownEndTime = userData.countdownEnd?.toMillis() || 0;
@@ -174,41 +212,42 @@ export function useQuest(userId) {
 
         // If we need a new quest
         if (forceReload || !userData.activeQuest || currentState === QuestStates.COOLDOWN) {
-          const questFilename = buildQuestFilename(
-            userData.gender || 'Male',
-            userData.class || 'Tanker',
-            userData.environment || 'Gym',
-            userData.trainingDays || 5
-          );
+      const questFilename = buildQuestFilename(
+          userData.gender || 'Male',
+          userData.class || 'Tanker',
+          userData.environment || 'Gym',
+          userData.trainingDays || 5
+      );
 
-          if (!questMap[questFilename]) {
-            throw new Error(`Quest not found: ${questFilename}`);
-          }
+      if (!questMap[questFilename]) {
+        throw new Error(`Quest not found: ${questFilename}`);
+      }
 
-          const quest = questMap[questFilename];
-          const dayKeys = Object.keys(quest.plan);
-          const newQuestIndex = (userData.currentQuestIndex + 1) % dayKeys.length;
-          const dayData = quest.plan[dayKeys[newQuestIndex]];
-          const questData = formatQuestData(dayData);
-
-          if (!questData) {
-            throw new Error('Failed to format quest data');
-          }
+      const quest = questMap[questFilename];
+      const dayKeys = Object.keys(quest.plan);
+          const currentIndex = userData.currentQuestIndex || 0;
+          const newQuestIndex = currentIndex + 1;
+          const dayData = quest.plan[dayKeys[newQuestIndex % dayKeys.length]];
+      const questData = formatQuestData(dayData);
+      
+      if (!questData) {
+        throw new Error('Failed to format quest data');
+      }
 
           // Calculate new countdown end based on current countdown end
           const newCountdownEnd = Timestamp.fromMillis(countdownEndTime + (24 * 60 * 60 * 1000));
 
           transaction.update(userRef, {
-            activeQuest: questData,
-            countdownEnd: newCountdownEnd,
-            questState: QuestStates.ACTIVE,
-            lastQuestUpdate: Timestamp.now(),
-            currentQuestIndex: newQuestIndex
+        activeQuest: questData,
+        countdownEnd: newCountdownEnd,
+          questState: QuestStates.ACTIVE,
+        lastQuestUpdate: Timestamp.now(),
+        currentQuestIndex: newQuestIndex
           });
 
-          setQuestState(QuestStates.ACTIVE);
-          setTodayQuest(questData);
-          setCountdownEnd(newCountdownEnd);
+        setQuestState(QuestStates.ACTIVE);
+      setTodayQuest(questData);
+      setCountdownEnd(newCountdownEnd);
         } else {
           setTodayQuest(userData.activeQuest);
           setCountdownEnd(userData.countdownEnd);
@@ -278,30 +317,29 @@ export function useQuest(userId) {
           todayQuest?.difficulty || 1
         );
 
-        const newCountdownEnd = await QuestStateManager.calculateCooldownEnd(
-          serverTime,
-          0,
-          userData.countdownEnd?.toMillis()
-        );
-
+        // Calculate new countdown end based on remaining time from current quest
+        const currentEnd = userData.countdownEnd?.toMillis() || serverTime;
+        const remainingTime = currentEnd - serverTime;
+        const newCountdownEnd = Timestamp.fromMillis(serverTime + remainingTime);
+        
         transaction.update(userRef, {
           questState: QuestStates.COOLDOWN,
           countdownEnd: newCountdownEnd,
           xp: increment(rewards.xp),
           coins: increment(rewards.coins),
-          streak: increment(1),
+        streak: increment(1),
           statPoints: increment(rewards.statPoints),
           lastQuestCompletedAt: Timestamp.now()
-        });
+      });
 
-        setQuestState(QuestStates.COOLDOWN);
+      setQuestState(QuestStates.COOLDOWN);
         setCountdownEnd(newCountdownEnd);
 
-        return {
-          success: true,
-          rewards,
-          remainingHours: 24
-        };
+      return {
+        success: true,
+        rewards,
+          remainingHours: Math.ceil(remainingTime / (60 * 60 * 1000))
+      };
       });
     } catch (error) {
       console.error('Error completing quest:', error);
@@ -333,12 +371,11 @@ export function useQuest(userId) {
         const userData = userDoc.data();
         const serverTime = Timestamp.now().toMillis();
         const penalties = await QuestStateManager.calculatePenalties(1, userData.stats || {});
-        const newCountdownEnd = await QuestStateManager.calculateCooldownEnd(
-          serverTime,
-          0,
-          userData.countdownEnd?.toMillis()
-        );
-
+        
+        // Calculate new countdown end by adding 24h to the current countdown end
+        const currentEnd = userData.countdownEnd?.toMillis() || serverTime;
+        const newCountdownEnd = Timestamp.fromMillis(currentEnd + (24 * 60 * 60 * 1000));
+        
         transaction.update(userRef, {
           questState: QuestStates.ACTIVE,
           countdownEnd: newCountdownEnd,

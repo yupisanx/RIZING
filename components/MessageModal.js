@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { theme } from '../utils/theme';
 
 const { width } = Dimensions.get('window');
 const NEON_COLOR = '#3b82f6'; // Blue
@@ -105,9 +106,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   messageText: {
+    ...theme.typography.h2,
     color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
     position: 'absolute',
     top: 10,
     left: 0,

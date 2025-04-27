@@ -9,73 +9,85 @@
       "focus": "Chest",
       "exercises": [
         {
-          "name": "Chest Fly (Band)",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
           "name": "Close-Grip Push-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 91
         },
         {
-          "name": "Push-ups",
+          "name": "Wide Push-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 92
         },
         {
-          "name": "T-Push-ups",
+          "name": "Chest Fly (Band)",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 95
+        },
+        {
+          "name": "Resistance Band Chest Press",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 113
         },
         {
           "name": "Clap Push-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 105
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 496
     },
     "day2": {
       "focus": "Back",
       "exercises": [
         {
-          "name": "Bird Dog Hold + Row",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
           "name": "Prone Y-Raise",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 109
         },
         {
-          "name": "Rear Delt Raises",
+          "name": "Superman Pull",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 117
         },
         {
-          "name": "Back Extensions",
+          "name": "Bird Dog Hold + Row",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 91
         },
         {
           "name": "Bent Over Rows",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 113
+        },
+        {
+          "name": "Wall Pulls",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 99
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 529
     },
     "day3": {
       "focus": "Legs",
@@ -84,142 +96,166 @@
           "name": "Heel Elevated Squats",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 118
         },
         {
           "name": "Wall Sit",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 100
+        },
+        {
+          "name": "Glute Bridges",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 90
         },
         {
           "name": "Walking Lunges",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 107
         },
         {
-          "name": "Side Lunges",
+          "name": "Bodyweight Squats",
           "sets": 3,
           "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Jump Squats",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 120
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 535
     },
     "day4": {
       "focus": "Shoulders",
       "exercises": [
         {
+          "name": "Shoulder Circles",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 120
+        },
+        {
+          "name": "Front Raises",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 117
+        },
+        {
           "name": "Reverse Flys",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 117
         },
         {
-          "name": "Shoulder Press (Band)",
+          "name": "Arnold Press",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 111
         },
         {
           "name": "Shoulder Taps",
           "sets": 3,
           "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Face Pulls (Band)",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Pike Push-ups",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 96
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 561
     },
     "day5": {
       "focus": "Core",
       "exercises": [
         {
-          "name": "Sit-ups",
+          "name": "Side Plank Dips",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 142
         },
         {
-          "name": "Mountain Climbers",
+          "name": "V-Ups",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 128
         },
         {
-          "name": "Plank Jacks",
+          "name": "Toe Touches",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 131
         },
         {
           "name": "Plank",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 128
         },
         {
           "name": "Bicycle Crunches",
           "sets": 3,
           "reps": 20,
-          "total": 60
+          "total": 60,
+          "estimated_time_seconds": 132
         }
       ],
-      "total_reps_all_exercises": 300
+      "total_reps_all_exercises": 300,
+      "day_total_estimated_time_seconds": 661
     },
     "day6": {
       "focus": "Full Body",
       "exercises": [
         {
-          "name": "Burpees",
+          "name": "Mountain Climbers",
           "sets": 3,
           "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Inchworm to Push-up",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
-        },
-        {
-          "name": "Plank to Push",
-          "sets": 3,
-          "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 75
         },
         {
           "name": "Push-ups",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 119
+        },
+        {
+          "name": "Burpees",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 70
+        },
+        {
+          "name": "Lunge to Knee Drive",
+          "sets": 3,
+          "reps": 15,
+          "total": 45,
+          "estimated_time_seconds": 64
         },
         {
           "name": "Squat to Press",
           "sets": 3,
           "reps": 15,
-          "total": 45
+          "total": 45,
+          "estimated_time_seconds": 97
         }
       ],
-      "total_reps_all_exercises": 225
+      "total_reps_all_exercises": 225,
+      "day_total_estimated_time_seconds": 425
     }
   }
 }

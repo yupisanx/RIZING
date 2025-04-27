@@ -9,6 +9,11 @@ import { Icons } from '../components/Icons';
 import { useNavigation } from '@react-navigation/native';
 import MessageModal from '../components/MessageModal';
 import BottomSheet from '../components/BottomSheet';
+import Tab from '../components/common/Tab';
+import RadarChart from '../components/common/RadarChart';
+import { theme } from '../utils/theme';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 const SCREEN_PADDING = 20;
 const HEADER_HEIGHT = 90;
@@ -42,6 +47,8 @@ export default function ProfileScreen() {
   const lastToggleTime = useRef(Date.now());
   const MIN_TOGGLE_INTERVAL = 300; // Minimum time between toggles in ms
   const isAnimating = useRef(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const tabs = ['Info', 'Stats', 'Inventory'];
 
   // Clear any pending timeouts when component unmounts
   useEffect(() => {
@@ -160,6 +167,78 @@ export default function ProfileScreen() {
     }
   };
 
+  const renderStatsChart = () => {
+    const data = {
+      labels: ['STR', 'VIT', 'AGI', 'INT', 'SEN'],
+      datasets: [
+        {
+          data: [
+            userData?.stats?.strength || 0,
+            userData?.stats?.vitality || 0,
+            userData?.stats?.agility || 0,
+            userData?.stats?.intelligence || 0,
+            userData?.stats?.sense || 0,
+          ],
+        },
+      ],
+    };
+
+    return (
+      <View style={styles.chartContainer}>
+        <RadarChart data={data} size={width - 40} color="#60a5fa" />
+        <View style={styles.statsContainer}>
+          <Text style={styles.statPointsLabel}>STAT POINTS</Text>
+          <Text style={styles.statPointsValue}>{userData?.statPoints || 0}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 0: // Info
+        return (
+          <View style={styles.tabContent}>
+            <View style={styles.userDataRow}>
+              <Text style={styles.label}>Level:</Text>
+              <Text style={styles.value}>{userData?.level || '1'}</Text>
+            </View>
+            <View style={styles.userDataRow}>
+              <Text style={styles.label}>Class:</Text>
+              <Text style={styles.value}>{userData?.class || 'N/A'}</Text>
+            </View>
+            <View style={styles.userDataRow}>
+              <Text style={styles.label}>Focus Area:</Text>
+              <Text style={styles.value}>{userData?.focusArea || 'None selected'}</Text>
+            </View>
+            <View style={styles.userDataRow}>
+              <Text style={styles.label}>Training Frequency:</Text>
+              <Text style={styles.value}>{userData?.frequency || 'N/A'}</Text>
+            </View>
+          </View>
+        );
+      case 1: // Stats
+        return (
+          <View style={styles.tabContent}>
+            {renderStatsChart()}
+          </View>
+        );
+      case 2: // Inventory
+        return (
+          <View style={styles.tabContent}>
+            <View style={styles.inventoryContainer}>
+              <View style={styles.coinsRow}>
+                <FontAwesome5 name="coins" size={20} color="#60a5fa" />
+                <Text style={styles.coinsValue}>{userData?.coins || '0'}</Text>
+              </View>
+            </View>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -242,6 +321,12 @@ export default function ProfileScreen() {
         decelerationRate="normal"
       >
         <View style={[styles.mainContent, { minHeight: height * 0.8, marginTop: Platform.OS === 'android' ? -STATUS_BAR_HEIGHT : 0 }]}>
+          <View style={styles.usernameContainer}>
+            <View style={styles.usernameWrapper}>
+              <Ionicons name="settings" size={20} color="#60a5fa" />
+              <Text style={styles.username}>{user?.displayName || 'User'}</Text>
+            </View>
+          </View>
           <Image
             source={avatarSource}
             style={[styles.avatar, { width, height: AVATAR_HEIGHT, marginTop: avatarMarginTop }]}
@@ -270,49 +355,10 @@ export default function ProfileScreen() {
         }}
       >
         <View style={styles.bottomSheetContent}>
-          <View style={styles.infoContainer}>
-            <Icons name="info" size={24} color="#60a5fa" />
-            <Text style={styles.bottomSheetTitle}>INFO</Text>
-          </View>
-
-          <View style={styles.userDataContainer}>
-            {/* Stats */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Stats</Text>
-              <View style={styles.userDataRow}>
-                <Text style={styles.label}>Class:</Text>
-                <Text style={styles.value}>{userData?.class || 'N/A'}</Text>
-              </View>
-              <View style={styles.userDataRow}>
-                <Text style={styles.label}>Strength:</Text>
-                <Text style={styles.value}>{userData?.stats?.strength || '0'}</Text>
-              </View>
-              <View style={styles.userDataRow}>
-                <Text style={styles.label}>Vitality:</Text>
-                <Text style={styles.value}>{userData?.stats?.vitality || '0'}</Text>
-              </View>
-              <View style={styles.userDataRow}>
-                <Text style={styles.label}>Agility:</Text>
-                <Text style={styles.value}>{userData?.stats?.agility || '0'}</Text>
-              </View>
-              <View style={styles.userDataRow}>
-                <Text style={styles.label}>Intelligence:</Text>
-                <Text style={styles.value}>{userData?.stats?.intelligence || '0'}</Text>
-              </View>
-              <View style={styles.userDataRow}>
-                <Text style={styles.label}>Sense:</Text>
-                <Text style={styles.value}>{userData?.stats?.sense || '0'}</Text>
-              </View>
-            </View>
-
-            {/* Focus Areas */}
-            <View style={[styles.sectionContainer, styles.lastSection]}>
-              <Text style={styles.sectionTitle}>Area</Text>
-              <View style={styles.userDataRow}>
-                <Text style={styles.value}>{userData?.focusArea || 'None selected'}</Text>
-              </View>
-            </View>
-          </View>
+          <Tab tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+          <ScrollView style={styles.tabContent}>
+            {renderTabContent()}
+          </ScrollView>
         </View>
       </BottomSheet>
     </View>
@@ -339,10 +385,9 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   loadingText: {
-    color: '#FFFFFF',
-    fontSize: 18,
+    ...theme.typography.body,
+    color: '#ffffff',
     textAlign: 'center',
-    marginTop: 50,
   },
   scrollView: {
     flex: 1,
@@ -363,7 +408,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   errorText: {
-    color: '#ff6b6b',
+    ...theme.typography.body,
+    color: '#ef4444',
+    textAlign: 'center',
   },
   retryButton: {
     backgroundColor: '#60a5fa',
@@ -374,111 +421,112 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   retryButtonText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...theme.typography.body,
+    color: '#ffffff',
+    textAlign: 'center',
   },
   bottomSheetContent: {
     flex: 1,
+    paddingTop: 0,
   },
-  infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 10,
-  },
-  bottomSheetTitle: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  userDataContainer: {
-    width: '100%',
+  tabContent: {
+    flex: 1,
     paddingHorizontal: 20,
-    marginTop: 20,
   },
   sectionContainer: {
-    marginBottom: 20,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(96, 165, 250, 0.3)',
-    paddingBottom: 10,
-  },
-  lastSection: {
-    marginBottom: 0,
-    borderBottomWidth: 0,
-  },
-  sectionTitle: {
-    color: '#60a5fa',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    letterSpacing: 0.5,
+    marginBottom: 16,
   },
   userDataRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   label: {
-    color: '#fff',
-    fontSize: 16,
-    opacity: 0.9,
+    ...theme.typography.body,
+    color: '#ffffff',
+    marginRight: 8,
   },
   value: {
+    ...theme.typography.body,
     color: '#60a5fa',
-    fontSize: 16,
-    fontWeight: '600',
-    maxWidth: '60%',
-    textAlign: 'right',
   },
-  menuContent: {
-    padding: 20,
-    marginTop: 60,
-  },
-  menuHeader: {
-    flexDirection: 'row',
+  comingSoonContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(96, 165, 250, 0.1)',
-    marginBottom: 20,
+    justifyContent: 'center',
+    paddingVertical: 32,
   },
-  userInfo: {
-    marginLeft: 12,
-    flex: 1,
+  comingSoon: {
+    ...theme.typography.h2,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginTop: 16,
   },
-  menuUsername: {
-    color: '#60a5fa',
-    fontSize: 16,
-    fontWeight: 'bold',
+  comingSoonSubtitle: {
+    ...theme.typography.body,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  chartContainer: {
+    alignItems: 'center',
+    marginTop: -10,
+    marginBottom: 16,
+  },
+  statsContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  statPointsLabel: {
+    fontFamily: 'PressStart2P',
+    fontSize: 12,
+    color: '#AAAAAA',
     marginBottom: 4,
   },
-  emailContainer: {
+  statPointsValue: {
+    fontFamily: 'PressStart2P',
+    fontSize: 24,
+    color: '#60a5fa',
+  },
+  usernameContainer: {
+    position: 'absolute',
+    top: -80,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+  },
+  usernameWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 10,
   },
-  emailLabel: {
+  username: {
     color: '#60a5fa',
-    fontSize: 14,
-    opacity: 0.8,
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  menuEmail: {
-    color: '#60a5fa',
-    fontSize: 14,
-    opacity: 0.8,
+  inventoryContainer: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingLeft: 5,
   },
-  menuItem: {
+  coinsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
+    gap: 8,
   },
-  menuItemText: {
+  coinsValue: {
+    fontFamily: 'PressStart2P',
+    fontSize: 20,
     color: '#60a5fa',
-    fontSize: 16,
-    marginLeft: 12,
   },
 });

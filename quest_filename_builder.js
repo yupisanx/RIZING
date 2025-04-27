@@ -8,11 +8,18 @@
  */
 function buildQuestFilename(gender, class_, environment, frequency) {
     // Capitalize first letter of each parameter
-    const capitalizedGender = gender.charAt(0).toUpperCase() + gender.slice(1);
-    const capitalizedClass = class_.charAt(0).toUpperCase() + class_.slice(1);
-    const capitalizedEnvironment = environment.charAt(0).toUpperCase() + environment.slice(1);
+    const capitalizedGender = gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
+    const capitalizedClass = class_.charAt(0).toUpperCase() + class_.slice(1).toLowerCase();
+    const capitalizedEnvironment = environment.charAt(0).toUpperCase() + environment.slice(1).toLowerCase();
     
-    return `${capitalizedGender}_${capitalizedClass}_${capitalizedEnvironment}_${frequency}days.json`;
+    const filename = `${capitalizedGender}_${capitalizedClass}_${capitalizedEnvironment}_${frequency}days`;
+    console.log('Debug - Building filename:', {
+        input: { gender, class: class_, environment, frequency },
+        capitalized: { capitalizedGender, capitalizedClass, capitalizedEnvironment },
+        result: filename
+    });
+    
+    return filename;
 }
 
 module.exports = buildQuestFilename; 

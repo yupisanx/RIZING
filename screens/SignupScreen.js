@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../utils/theme';
 
 export default function SignupScreen({ navigation }) {
   const [username, setUsername] = useState('');
@@ -187,8 +188,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    ...theme.typography.h1,
     color: '#60a5fa',
     textAlign: 'center',
     marginBottom: 25,
@@ -203,21 +203,21 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   input: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
+    ...theme.typography.body,
+    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+    borderRadius: 8,
     padding: 12,
-    marginBottom: 12,
-    color: '#60a5fa',
+    marginBottom: 8,
+    color: '#ffffff',
     borderWidth: 1,
-    borderColor: 'rgba(96, 165, 250, 0.2)',
-    fontSize: 16,
+    borderColor: 'rgba(96, 165, 250, 0.3)',
   },
   passwordContainer: {
     position: 'relative',
     marginBottom: 12,
   },
   passwordInput: {
-    marginBottom: 0,
+    paddingRight: 40,
   },
   eyeIcon: {
     position: 'absolute',
@@ -226,13 +226,14 @@ const styles = StyleSheet.create({
   },
   signupButton: {
     backgroundColor: '#60a5fa',
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     marginTop: 0,
   },
   signupButtonText: {
-    color: '#000000',
+    ...theme.typography.h3,
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -241,20 +242,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loginText: {
+    ...theme.typography.body,
     color: '#6b7280',
     fontSize: 14,
   },
   loginTextBold: {
+    ...theme.typography.body,
     color: '#60a5fa',
     fontWeight: 'bold',
   },
   inputError: {
-    borderColor: '#ff0000',
+    borderColor: '#ef4444',
   },
   errorText: {
-    color: '#ff0000',
-    fontSize: 12,
-    marginTop: 5,
+    ...theme.typography.caption,
+    color: '#ef4444',
+    marginBottom: 8,
   },
   submitError: {
     textAlign: 'left',

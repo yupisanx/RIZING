@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Modal, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Modal, Image, Animated, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icons } from './Icons';
 import { theme } from '../utils/theme';
@@ -37,6 +37,13 @@ const QuestComponent = ({
   const [hasTriggeredEnd, setHasTriggeredEnd] = useState(false);
   const [rewards, setRewards] = useState(null);
   const fadeAnim = useState(new Animated.Value(0))[0];
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!loading && questData && countdownEnd) {
+      setIsInitialized(true);
+    }
+  }, [loading, questData, countdownEnd]);
 
   useEffect(() => {
     if (route?.params?.completedExercises) {
@@ -52,13 +59,13 @@ const QuestComponent = ({
   }, [questState]);
 
   useEffect(() => {
-    if (!countdownEnd) {
+    if (!countdownEnd || !isInitialized) {
       return;
     }
 
     const calculateTimeLeft = () => {
-      const now = new Date();
-      const end = countdownEnd.toDate();
+      const now = Timestamp.now().toMillis();
+      const end = countdownEnd.toMillis();
       const difference = end - now;
 
       if (difference <= 0 && !hasTriggeredEnd) {
@@ -95,10 +102,12 @@ const QuestComponent = ({
     return () => {
       clearInterval(interval);
     };
-  }, [countdownEnd, questState, onCooldownEnd, onQuestFailure, hasTriggeredEnd]);
+  }, [countdownEnd, questState, onCooldownEnd, onQuestFailure, hasTriggeredEnd, isInitialized]);
 
   const isQuestComplete = () => {
-    if (!questData || !questData.exercises) return false;
+    if (!questData || !questData.exercises || !Array.isArray(questData.exercises)) {
+      return false;
+    }
     return questData.exercises.every(exercise => completedExercises[exercise.name]);
   };
 
@@ -130,11 +139,17 @@ const QuestComponent = ({
     });
   };
 
-  const handleExerciseComplete = (exerciseName) => {
-    setCompletedExercises(prev => ({
-      ...prev,
-      [exerciseName]: !prev[exerciseName]
-    }));
+  const handleExerciseComplete = (exerciseNameOrBulk) => {
+    if (typeof exerciseNameOrBulk === 'string') {
+      // Individual exercise completion
+      setCompletedExercises(prev => ({
+        ...prev,
+        [exerciseNameOrBulk]: !prev[exerciseNameOrBulk]
+      }));
+    } else {
+      // Bulk completion (when test checkbox is pressed)
+      setCompletedExercises(exerciseNameOrBulk);
+    }
   };
 
   const renderContent = () => {
@@ -160,11 +175,21 @@ const QuestComponent = ({
   if (questState === QuestStates.COOLDOWN) {
     return (
       <View style={styles.container}>
-        <Image 
-          source={require('../assets/images/assistant-avatar.png')}
-          style={styles.assistantImage}
-          resizeMode="contain"
-        />
+        <View style={styles.assistantImageContainer}>
+          <Image 
+            source={require('../assets/images/assistant-avatar.png')}
+            style={styles.assistantImage}
+            resizeMode="contain"
+            defaultSource={require('../assets/images/assistant-avatar.png')}
+            onError={(e) => {
+              console.log('Image loading error:', e.nativeEvent.error);
+            }}
+            onLoad={() => {
+              console.log('Image loaded successfully');
+            }}
+            fadeDuration={0}
+          />
+        </View>
         <View style={[styles.modalContainer, styles.cooldownContainer]}>
           <View style={styles.glowEffect} />
           <View style={[styles.modal, styles.cooldownModal]}>
@@ -174,7 +199,7 @@ const QuestComponent = ({
               </Text>
               <View style={styles.cooldownTimerContainer}>
                 <Icons name="clock" size={32} color={NEON_COLOR} />
-                <Text style={styles.cooldownTimer}>{remainingTime}</Text>
+                <Text style={styles.cooldownTimer}>{remainingTime || '00:00:00'}</Text>
               </View>
             </View>
           </View>
@@ -302,13 +327,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    marginTop: -35,
+    paddingTop: 20,
   },
   modalContainer: {
     width: width * 0.85,
     maxWidth: 500,
     height: MODAL_HEIGHT,
     position: 'relative',
+    marginTop: 100,
   },
   glowEffect: {
     position: 'absolute',
@@ -597,7 +623,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     borderRadius: 16,
     overflow: 'visible',
-    marginTop: -20,
+    marginTop: -50,
     alignSelf: 'flex-start',
     marginLeft: 10,
   },
@@ -668,18 +694,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 20,
   },
-  assistantImage: {
+  assistantImageContainer: {
     position: 'absolute',
     width: width * 1.6,
     height: width * 1.6,
-    opacity: 1,
-    top: '60%',
+    top: '55%',
     left: '50%',
     transform: [
       { translateX: -(width * 0.8) },
       { translateY: -(width * 0.8) }
     ],
     zIndex: 1,
+    backgroundColor: 'transparent',
+  },
+  assistantImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 1,
+    backgroundColor: 'transparent',
   },
 });
 

@@ -203,10 +203,12 @@ const styles = StyleSheet.create({
     color: '#60a5fa',
     fontSize: 14,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
   },
   menuEmail: {
     color: '#60a5fa',
     fontSize: 14,
+    fontFamily: 'PressStart2P',
   },
   menuItem: {
     flexDirection: 'row',
@@ -217,6 +219,7 @@ const styles = StyleSheet.create({
     color: '#60a5fa',
     fontSize: 16,
     marginLeft: 12,
+    fontFamily: 'PressStart2P',
   },
   trainingCard: {
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
@@ -242,10 +245,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
+    fontFamily: 'PressStart2P',
   },
   cardSubtitle: {
     color: 'rgba(96, 165, 250, 0.6)',
     fontSize: 16,
+    fontFamily: 'PressStart2P',
   },
   progressCircle: {
     position: 'absolute',
