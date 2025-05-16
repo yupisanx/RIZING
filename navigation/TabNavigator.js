@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Dimensions } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 import { Icons } from '../components/Icons';
 import { theme } from '../utils/theme';
 import { isTablet, platformSelect } from '../utils/responsive';
 import { useWelcome } from '../contexts/WelcomeContext';
 import LoadingScreen from '../components/LoadingScreen';
-import RankingScreen from '../screens/RankingScreen';
+import HomeScreen from '../screens/HomeScreen';
 import QuestScreen from '../screens/QuestScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
@@ -57,19 +57,20 @@ export default function TabNavigator() {
           backgroundColor: theme.colors.background,
           height: platformSelect({
             ios: theme.spacing.xl * 2 + insets.bottom,
-            android: theme.spacing.xl * 1.8 + insets.bottom,
+            android: theme.spacing.xl * 2.8,
             default: theme.spacing.xl * 2 + insets.bottom,
           }),
-          borderTopWidth: 1,
+          borderTopWidth: Platform.OS === 'android' ? 0 : 1,
+          borderBottomWidth: Platform.OS === 'android' ? 1 : 0,
           borderTopColor: theme.colors.border,
+          borderBottomColor: theme.colors.border,
           borderLeftWidth: 0,
           borderRightWidth: 0,
-          borderBottomWidth: 0,
           position: 'absolute',
-          bottom: 0,
+          bottom: Platform.OS === 'android' ? 0 : 0,
           left: 0,
           right: 0,
-          paddingBottom: insets.bottom,
+          paddingBottom: Platform.OS === 'android' ? 20 : insets.bottom,
           display: showingWelcome ? 'none' : 'flex',
           zIndex: 999999,
           elevation: 999999,
@@ -80,31 +81,31 @@ export default function TabNavigator() {
           ...theme.typography.body,
           fontSize: 8,
           lineHeight: 12,
-          marginBottom: 2,
+          marginBottom: Platform.OS === 'android' ? 0 : 2,
           fontFamily: 'PressStart2P',
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.inactive,
         tabBarItemStyle: {
           padding: theme.spacing.sm,
-          paddingBottom: theme.spacing.xs + 8,
-          paddingTop: theme.spacing.xs,
+          paddingBottom: Platform.OS === 'android' ? theme.spacing.xs : theme.spacing.xs + 8,
+          paddingTop: Platform.OS === 'android' ? theme.spacing.xs - 4 : theme.spacing.xs,
         },
         headerShown: false,
       }}
     >
       <Tab.Screen
-        name="Rank"
-        component={RankingScreen}
+        name="Home"
+        component={HomeScreen}
         options={{
           tabBarIcon: ({ color }) => (
             <TabIcon 
-              name="ranking" 
+              name="home" 
               size={isTablet ? 32 : 28} 
               color={color} 
             />
           ),
-          tabBarAccessibilityLabel: "Rank tab",
+          tabBarAccessibilityLabel: "Home tab",
         }}
       />
       <Tab.Screen

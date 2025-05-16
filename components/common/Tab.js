@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { theme } from '../../utils/theme';
 
 const Tab = ({ tabs, activeTab, onTabChange }) => {
@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
   },
   tabText: {
     ...theme.typography.body,
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: Platform.OS === 'android' ? 9 : 11,
+    lineHeight: Platform.OS === 'android' ? 14 : 16,
     color: '#666666',
     letterSpacing: 1,
   },

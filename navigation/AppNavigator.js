@@ -7,7 +7,11 @@ import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import ExerciseTableScreen from '../screens/ExerciseTableScreen';
+import GoalScreen from '../screens/GoalScreen';
+import MenuScreen from '../screens/MenuScreen';
 import TabNavigator from './TabNavigator';
+import Menu from '../components/Menu';
+import LoadingScreen from '../screens/LoadingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,7 +21,11 @@ const Stack = createNativeStackNavigator();
  * @returns {JSX.Element} The app navigation component
  */
 export default function AppNavigator() {
-  const { user, hasCompletedOnboarding } = useAuth();
+  const { user, loading, hasCompletedOnboarding } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <NavigationContainer>
@@ -32,7 +40,7 @@ export default function AppNavigator() {
         {!user ? (
           <>
             <Stack.Screen 
-              name="Login" 
+              name="LoginScreen" 
               component={LoginScreen}
               options={{
                 animation: 'fade',
@@ -70,9 +78,24 @@ export default function AppNavigator() {
                 animation: 'slide_from_right',
               }}
             />
+            <Stack.Screen 
+              name="Goal" 
+              component={GoalScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen 
+              name="Menu" 
+              component={MenuScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
           </>
         )}
       </Stack.Navigator>
+      <Menu />
     </NavigationContainer>
   );
 } 

@@ -16,7 +16,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 const SCREEN_PADDING = 20;
-const HEADER_HEIGHT = 90;
+const HEADER_HEIGHT = Platform.select({
+  ios: 35,
+  android: 50,
+});
 const STATUS_BAR_HEIGHT = Platform.select({
   ios: 0,
   android: 24,
@@ -31,7 +34,7 @@ export default function ProfileScreen() {
 
   // Calculate responsive avatar margin
   const avatarMarginTop = useMemo(() => {
-    const baseMargin = Platform.OS === 'ios' ? -280 : -height * 0.35;
+    const baseMargin = Platform.OS === 'ios' ? -190 : -height * 0.35 + 180;
     const deviceScale = height / 844; // iPhone 14 Pro height as reference
     return baseMargin * deviceScale;
   }, [height]);
@@ -215,6 +218,10 @@ export default function ProfileScreen() {
               <Text style={styles.label}>Training Frequency:</Text>
               <Text style={styles.value}>{userData?.frequency || 'N/A'}</Text>
             </View>
+            <View style={styles.userDataRow}>
+              <Text style={styles.label}>Streak:</Text>
+              <Text style={styles.value}>{userData?.streak || '0'} days</Text>
+            </View>
           </View>
         );
       case 1: // Stats
@@ -298,18 +305,18 @@ export default function ProfileScreen() {
       {/* Header Icons */}
       <View style={styles.header}>
         <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={() => navigation.navigate('Menu')}
+          accessibilityLabel="Open menu"
+        >
+          <Icons name="menu" size={34} color="#60a5fa" />
+        </TouchableOpacity>
+        <TouchableOpacity 
           style={styles.iconButton}
           onPress={() => setShowMessageModal(true)}
           accessibilityLabel="Open messages"
         >
-          <Icons name="mail" size={28} color="#60a5fa" />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.menuButton}
-          onPress={toggleMenu}
-          accessibilityLabel="Open menu"
-        >
-          <Icons name="menu" size={28} color="#60a5fa" />
+          <Icons name="mail" size={34} color="#60a5fa" />
         </TouchableOpacity>
       </View>
 
@@ -323,7 +330,7 @@ export default function ProfileScreen() {
         <View style={[styles.mainContent, { minHeight: height * 0.8, marginTop: Platform.OS === 'android' ? -STATUS_BAR_HEIGHT : 0 }]}>
           <View style={styles.usernameContainer}>
             <View style={styles.usernameWrapper}>
-              <Ionicons name="settings" size={20} color="#60a5fa" />
+              <Ionicons name="settings" size={Platform.OS === 'android' ? 24 : 20} color="#60a5fa" />
               <Text style={styles.username}>{user?.displayName || 'User'}</Text>
             </View>
           </View>
@@ -374,15 +381,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingTop: Platform.OS === 'android' ? 35 : 15,
+    paddingBottom: Platform.OS === 'android' ? 7.5 : 5,
     marginBottom: 10,
   },
   iconButton: {
     padding: 12,
+    paddingTop: Platform.OS === 'android' ? 25 : 45,
   },
   menuButton: {
     padding: 12,
+    paddingTop: Platform.OS === 'android' ? 25 : 45,
   },
   loadingText: {
     ...theme.typography.body,
@@ -431,7 +440,7 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
   },
   sectionContainer: {
     marginBottom: 16,
@@ -492,7 +501,7 @@ const styles = StyleSheet.create({
   },
   usernameContainer: {
     position: 'absolute',
-    top: -80,
+    top: Platform.OS === 'android' ? -25 : -25,
     left: 0,
     right: 0,
     zIndex: 1,
@@ -502,10 +511,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+    marginTop: Platform.OS === 'android' ? 0 : -5,
   },
   username: {
     color: '#60a5fa',
-    fontSize: 18,
+    fontSize: Platform.OS === 'android' ? 22 : 18,
     fontWeight: 'bold',
     fontFamily: 'PressStart2P',
     textAlign: 'center',

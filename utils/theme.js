@@ -1,5 +1,6 @@
 import { Dimensions } from 'react-native';
 import { getResponsiveFontSize, getResponsivePadding } from './responsive';
+import { FONTS } from './fonts';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,27 +43,27 @@ export const theme = {
   typography: {
     h1: {
       fontSize: getResponsiveFontSize(18),
-      fontFamily: 'PressStart2P',
+      fontFamily: FONTS.PressStart2P,
       lineHeight: getResponsiveFontSize(24),
     },
     h2: {
       fontSize: getResponsiveFontSize(16),
-      fontFamily: 'PressStart2P',
+      fontFamily: FONTS.PressStart2P,
       lineHeight: getResponsiveFontSize(22),
     },
     h3: {
       fontSize: getResponsiveFontSize(14),
-      fontFamily: 'PressStart2P',
+      fontFamily: FONTS.PressStart2P,
       lineHeight: getResponsiveFontSize(20),
     },
     body: {
       fontSize: getResponsiveFontSize(12),
-      fontFamily: 'PressStart2P',
+      fontFamily: FONTS.PressStart2P,
       lineHeight: getResponsiveFontSize(18),
     },
     caption: {
       fontSize: getResponsiveFontSize(10),
-      fontFamily: 'PressStart2P',
+      fontFamily: FONTS.PressStart2P,
       lineHeight: getResponsiveFontSize(16),
     },
   },

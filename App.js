@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as Font from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './contexts/AuthContext';
 import { WelcomeProvider } from './contexts/WelcomeContext';
@@ -10,6 +10,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Menu from './components/Menu';
 import { StatusBar } from 'expo-status-bar';
 import AppNavigator from './navigation/AppNavigator';
+import { loadFonts } from './utils/fonts';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 /**
  * Main App component that initializes the application
@@ -19,20 +23,24 @@ export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
-    const loadFonts = async () => {
+    const prepare = async () => {
       try {
-        await Font.loadAsync({
-          'PressStart2P': require('./assets/fonts/PressStart2P-Regular.ttf'),
-        });
-        setFontsLoaded(true);
+        // Load fonts using centralized font management
+        const fontsLoaded = await loadFonts();
+        setFontsLoaded(fontsLoaded);
+        
+        // Add any other initialization logic here
       } catch (error) {
-        console.error('Error loading fonts:', error);
+        console.error('Error during app initialization:', error);
         // Continue without custom fonts
         setFontsLoaded(true);
+      } finally {
+        // Hide splash screen with a smooth fade
+        await SplashScreen.hideAsync();
       }
     };
 
-    loadFonts();
+    prepare();
   }, []);
 
   if (!fontsLoaded) {
@@ -44,15 +52,14 @@ export default function App() {
       <SafeAreaProvider>
         <BottomSheetModalProvider>
           <AuthProvider>
-            <WelcomeProvider>
-              <OnboardingProvider>
+            <OnboardingProvider>
+              <WelcomeProvider>
                 <MenuProvider>
                   <AppNavigator />
-                  <Menu />
                   <StatusBar style="light" />
                 </MenuProvider>
-              </OnboardingProvider>
-            </WelcomeProvider>
+              </WelcomeProvider>
+            </OnboardingProvider>
           </AuthProvider>
         </BottomSheetModalProvider>
       </SafeAreaProvider>

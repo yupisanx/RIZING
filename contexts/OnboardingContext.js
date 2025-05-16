@@ -3,83 +3,50 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const OnboardingContext = createContext();
 
-const STORAGE_KEY = '@onboarding_data';
-
 export const OnboardingProvider = ({ children }) => {
-  const [onboardingData, setOnboardingData] = useState({
-    gender: null,
-    avatarId: null,
-    class: null,
-    rank: null,
-    environment: null,
-    trainingDays: null,
-    focusArea: null,
-  });
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Load data from storage when component mounts
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const storedData = await AsyncStorage.getItem(STORAGE_KEY);
-        if (storedData) {
-          const parsedData = JSON.parse(storedData);
-          console.log('Loaded onboarding data:', parsedData);
-          setOnboardingData(parsedData);
-        }
-      } catch (error) {
-        console.error('Error loading onboarding data:', error);
-      }
-    };
-    loadData();
+    checkOnboardingStatus();
   }, []);
 
-  const updateOnboardingData = async (key, value) => {
+  const checkOnboardingStatus = async () => {
     try {
-      console.log('Updating onboarding data:', { key, value });
-      setOnboardingData(prevData => {
-        const newData = {
-          ...prevData,
-          [key]: value
-        };
-        console.log('New onboarding data:', newData);
-        // Save to storage immediately
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-        return newData;
-      });
+      const onboardingData = await AsyncStorage.getItem('@onboarding_data');
+      if (onboardingData) {
+        const { hasCompletedOnboarding: completed } = JSON.parse(onboardingData);
+        setHasCompletedOnboarding(completed);
+      }
     } catch (error) {
-      console.error('Error saving onboarding data:', error);
+      console.error('Error checking onboarding status:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const resetOnboardingData = async () => {
+  const completeOnboarding = async (userData) => {
     try {
-      const emptyData = {
-        gender: null,
-        avatarId: null,
-        class: null,
-        rank: null,
-        environment: null,
-        trainingDays: null,
-        focusArea: null,
+      const onboardingData = {
+        ...userData,
+        hasCompletedOnboarding: true
       };
-      setOnboardingData(emptyData);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(emptyData));
+      await AsyncStorage.setItem('@onboarding_data', JSON.stringify(onboardingData));
+      setHasCompletedOnboarding(true);
     } catch (error) {
-      console.error('Error resetting onboarding data:', error);
+      console.error('Error completing onboarding:', error);
+      throw error;
     }
   };
-
-  // Log state changes
-  useEffect(() => {
-    console.log('Onboarding data changed:', onboardingData);
-  }, [onboardingData]);
 
   return (
-    <OnboardingContext.Provider value={{
-      onboardingData,
-      updateOnboardingData,
-      resetOnboardingData,
-    }}>
+    <OnboardingContext.Provider
+      value={{
+        hasCompletedOnboarding,
+        loading,
+        completeOnboarding,
+      }}
+    >
       {children}
     </OnboardingContext.Provider>
   );

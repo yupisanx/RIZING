@@ -8,28 +8,28 @@ const { width, height } = Dimensions.get('window');
 
 const GenderAvatarScreen = ({ navigation }) => {
   const { onboardingData, updateOnboardingData } = useOnboarding();
-  const [selectedGender, setSelectedGender] = React.useState(onboardingData.gender || 'male');
+  const [selectedGender, setSelectedGender] = React.useState('male');
   const [isNavigating, setIsNavigating] = React.useState(false);
 
   // Update selectedGender when onboardingData changes
   useEffect(() => {
-    if (onboardingData.gender) {
+    if (onboardingData && onboardingData.gender) {
       setSelectedGender(onboardingData.gender);
     }
-  }, [onboardingData.gender]);
+  }, [onboardingData]);
 
   // Reset isNavigating when component mounts or screen comes into focus
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       setIsNavigating(false);
       // Update local state with current onboarding data
-      if (onboardingData.gender) {
+      if (onboardingData && onboardingData.gender) {
         setSelectedGender(onboardingData.gender);
       }
     });
 
     return unsubscribe;
-  }, [navigation, onboardingData.gender]);
+  }, [navigation, onboardingData]);
 
   const toggleGender = async () => {
     const newGender = selectedGender === 'male' ? 'female' : 'male';

@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "298096239214",
+    "project_id": "ari-e1552",
+    "storage_bucket": "ari-e1552.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:298096239214:android:2af8727bdab2b97e7b3c7f",
+        "android_client_info": {
+          "package_name": "com.rizup.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "298096239214-r1bmb9acmvbm3v79v7bmn5cd3nuer787.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rizup.app",
+            "certificate_hash": "cbf2da87984a97e9346aa570501c292d114fe4fb"
+          }
+        },
+        {
+          "client_id": "298096239214-4qpe2hplq7su1o6kbhi5f19k6b6dm947.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDEPoHG5jTgs0QjuwWZZSf3nzpMWzf1Mk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "298096239214-4qpe2hplq7su1o6kbhi5f19k6b6dm947.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "298096239214-k1fqngf31cdr876209ghbchngtbbt6j2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.riz.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

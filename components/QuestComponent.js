@@ -53,16 +53,11 @@ const QuestComponent = ({
   }, [route?.params?.completedExercises]);
 
   useEffect(() => {
-    // Reset states when quest state changes
-    setCountdownActive(true);
-    setHasTriggeredEnd(false);
-  }, [questState]);
-
-  useEffect(() => {
     if (!countdownEnd || !isInitialized) {
       return;
     }
 
+    let interval;
     const calculateTimeLeft = () => {
       const now = Timestamp.now().toMillis();
       const end = countdownEnd.toMillis();
@@ -73,12 +68,10 @@ const QuestComponent = ({
         setRemainingTime('00:00:00');
         setCountdownActive(false);
         
-        if (questState === 'cooldown') {
+        if (questState === QuestStates.COOLDOWN) {
           onCooldownEnd();
-        } else if (questState === 'active') {
-          setTimeout(() => {
-            onQuestFailure();
-          }, 1000);
+        } else if (questState === QuestStates.ACTIVE) {
+          onQuestFailure();
         }
         return;
       }
@@ -88,21 +81,64 @@ const QuestComponent = ({
         const minutes = Math.floor((difference / (1000 * 60)) % 60);
         const seconds = Math.floor((difference / 1000) % 60);
 
-        setRemainingTime(
-          `${hours.toString().padStart(2, '0')}:${minutes
-            .toString()
-            .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-        );
+        // Format time with leading zeros
+        const formattedHours = hours.toString().padStart(2, '0');
+        const formattedMinutes = minutes.toString().padStart(2, '0');
+        const formattedSeconds = seconds.toString().padStart(2, '0');
+
+        setRemainingTime(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`);
       }
     };
 
+    // Initial calculation
     calculateTimeLeft();
-    const interval = setInterval(calculateTimeLeft, 1000);
-    
+
+    // Set up interval only if countdown is active
+    if (countdownActive) {
+      interval = setInterval(calculateTimeLeft, 1000);
+    }
+
+    // Cleanup
     return () => {
-      clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
     };
-  }, [countdownEnd, questState, onCooldownEnd, onQuestFailure, hasTriggeredEnd, isInitialized]);
+  }, [countdownEnd, questState, onCooldownEnd, onQuestFailure, hasTriggeredEnd, isInitialized, countdownActive]);
+
+  // Reset states when quest state changes
+  useEffect(() => {
+    setCountdownActive(true);
+    setHasTriggeredEnd(false);
+  }, [questState]);
+
+  // Handle quest completion
+  const handleQuestComplete = useCallback(async () => {
+    try {
+      const result = await onQuestComplete();
+      if (result.success) {
+        setCountdownActive(false);
+        setHasTriggeredEnd(true);
+        setRewards(result.rewards);
+        animateFade(1, () => {
+          setShowCompletionPopup(true);
+        });
+      }
+    } catch (error) {
+      console.error('Error completing quest:', error);
+    }
+  }, [onQuestComplete]);
+
+  // Handle quest failure
+  const handleQuestFailure = useCallback(async () => {
+    try {
+      await onQuestFailure();
+      setCountdownActive(false);
+      setHasTriggeredEnd(true);
+    } catch (error) {
+      console.error('Error handling quest failure:', error);
+    }
+  }, [onQuestFailure]);
 
   const isQuestComplete = () => {
     if (!questData || !questData.exercises || !Array.isArray(questData.exercises)) {
@@ -118,19 +154,6 @@ const QuestComponent = ({
       useNativeDriver: true,
     }).start(callback);
   }, [fadeAnim]);
-
-  const handleCompleteQuest = async () => {
-    if (isQuestComplete()) {
-      setCountdownActive(false);
-      const result = await onQuestComplete();
-      if (result.success) {
-        setRewards(result.rewards);
-        animateFade(1, () => {
-          setShowCompletionPopup(true);
-        });
-      }
-    }
-  };
 
   const handleClaimRewards = () => {
     animateFade(0, () => {
@@ -201,6 +224,9 @@ const QuestComponent = ({
                 <Icons name="clock" size={32} color={NEON_COLOR} />
                 <Text style={styles.cooldownTimer}>{remainingTime || '00:00:00'}</Text>
               </View>
+              <Text style={styles.cooldownSubtext}>
+                Next quest will be available at midnight
+              </Text>
             </View>
           </View>
           <View style={styles.speechBubbleTail} />
@@ -262,7 +288,7 @@ const QuestComponent = ({
       {isQuestComplete() && (
         <TouchableOpacity 
           style={styles.completeButton}
-          onPress={handleCompleteQuest}
+          onPress={handleQuestComplete}
         >
           <LinearGradient
             colors={['#3b82f6', '#2563eb']}
@@ -667,6 +693,13 @@ const styles = StyleSheet.create({
     color: NEON_COLOR,
     fontSize: 17,
     fontWeight: 'bold',
+    fontFamily: 'PressStart2P',
+  },
+  cooldownSubtext: {
+    color: '#ffffff',
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 5,
     fontFamily: 'PressStart2P',
   },
   speechBubbleTail: {

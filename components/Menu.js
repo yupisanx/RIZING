@@ -4,12 +4,14 @@ import { Icons } from './Icons';
 import { useMenu } from '../contexts/MenuContext';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../utils/theme';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
 export default function Menu() {
   const { menuVisible, toggleMenu, slideAnim } = useMenu();
   const { user, logout } = useAuth();
+  const navigation = useNavigation();
 
   if (!menuVisible) return null;
 
@@ -41,9 +43,13 @@ export default function Menu() {
 
           <TouchableOpacity 
             style={styles.logoutButton}
-            onPress={() => {
-              toggleMenu();
-              logout();
+            onPress={async () => {
+              try {
+                await logout();
+                toggleMenu();
+              } catch (error) {
+                console.error('Error during logout:', error);
+              }
             }}
             accessibilityLabel="Logout"
           >
@@ -69,7 +75,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     width: width,
-    height: height,
+    height: height + 100,
     backgroundColor: '#000000',
     zIndex: 999999,
   },
@@ -109,7 +115,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: 'auto',
-    marginBottom: 40,
+    marginBottom: 80,
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderTopWidth: 1,

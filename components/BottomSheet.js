@@ -4,14 +4,17 @@ import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-const NAV_BAR_HEIGHT = 65; // Decreased from 75 to 65 to move bottom sheet down
+const NAV_BAR_HEIGHT = Platform.select({
+  ios: 65,
+  android: 65, // Match iOS height exactly
+});
 
 const BottomSheet = ({ children, isVisible, onClose, initialSnapPoint = 0 }) => {
   const insets = useSafeAreaInsets();
   const bottomSheetModalRef = useRef(null);
 
   // Calculate available height (screen height minus navigation bar)
-  const availableHeight = SCREEN_HEIGHT - NAV_BAR_HEIGHT - (Platform.OS === 'ios' ? insets.bottom : 0);
+  const availableHeight = SCREEN_HEIGHT - NAV_BAR_HEIGHT - (Platform.OS === 'ios' ? insets.bottom : insets.bottom);
   
   // Calculate snap points to match Gymshark example
   const snapPoints = useMemo(() => {

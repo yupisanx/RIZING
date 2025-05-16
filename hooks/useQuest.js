@@ -301,46 +301,12 @@ export function useQuest(userId) {
         throw new Error('User ID is required');
       }
 
-      const userRef = doc(db, 'users', userId);
-      
-      // Use transaction to safely complete quest
-      await runTransaction(db, async (transaction) => {
-        const userDoc = await transaction.get(userRef);
-        if (!userDoc.exists()) {
-          throw new Error('User document does not exist');
-        }
-
-        const userData = userDoc.data();
-        const serverTime = Timestamp.now().toMillis();
-        const rewards = await QuestStateManager.calculateRewards(
-          userData.streak || 0,
-          todayQuest?.difficulty || 1
-        );
-
-        // Calculate new countdown end based on remaining time from current quest
-        const currentEnd = userData.countdownEnd?.toMillis() || serverTime;
-        const remainingTime = currentEnd - serverTime;
-        const newCountdownEnd = Timestamp.fromMillis(serverTime + remainingTime);
-        
-        transaction.update(userRef, {
-          questState: QuestStates.COOLDOWN,
-          countdownEnd: newCountdownEnd,
-          xp: increment(rewards.xp),
-          coins: increment(rewards.coins),
-        streak: increment(1),
-          statPoints: increment(rewards.statPoints),
-          lastQuestCompletedAt: Timestamp.now()
-      });
-
-      setQuestState(QuestStates.COOLDOWN);
-        setCountdownEnd(newCountdownEnd);
-
-      return {
-        success: true,
-        rewards,
-          remainingHours: Math.ceil(remainingTime / (60 * 60 * 1000))
-      };
-      });
+      const result = await QuestStateManager.handleQuestCompletion(userId, db);
+      if (result.success) {
+        setQuestState(QuestStates.COOLDOWN);
+        setCountdownEnd(result.countdownEnd);
+      }
+      return result;
     } catch (error) {
       console.error('Error completing quest:', error);
       return {
@@ -348,7 +314,7 @@ export function useQuest(userId) {
         error: error.message
       };
     }
-  }, [userId, todayQuest]);
+  }, [userId, db]);
 
   /**
    * Handles quest failure
@@ -359,36 +325,12 @@ export function useQuest(userId) {
         throw new Error('User ID is required');
       }
 
-      const userRef = doc(db, 'users', userId);
-      
-      // Use transaction to safely handle quest failure
-      await runTransaction(db, async (transaction) => {
-        const userDoc = await transaction.get(userRef);
-        if (!userDoc.exists()) {
-          throw new Error('User document does not exist');
-        }
-
-        const userData = userDoc.data();
-        const serverTime = Timestamp.now().toMillis();
-        const penalties = await QuestStateManager.calculatePenalties(1, userData.stats || {});
-        
-        // Calculate new countdown end by adding 24h to the current countdown end
-        const currentEnd = userData.countdownEnd?.toMillis() || serverTime;
-        const newCountdownEnd = Timestamp.fromMillis(currentEnd + (24 * 60 * 60 * 1000));
-        
-        transaction.update(userRef, {
-          questState: QuestStates.ACTIVE,
-          countdownEnd: newCountdownEnd,
-          streak: 0,
-          stats: penalties,
-          lastQuestGeneratedAt: Timestamp.now()
-        });
-
-        setQuestState(QuestStates.ACTIVE);
-        setCountdownEnd(newCountdownEnd);
-
-        return { success: true };
-      });
+      const result = await QuestStateManager.handleQuestExpiration(userId, db);
+      if (result.success) {
+        setQuestState(QuestStates.COOLDOWN);
+        setCountdownEnd(result.countdownEnd);
+      }
+      return result;
     } catch (error) {
       console.error('Error handling quest failure:', error);
       return {
@@ -396,76 +338,32 @@ export function useQuest(userId) {
         error: error.message
       };
     }
-  }, [userId]);
+  }, [userId, db]);
 
   /**
    * Handles expired quest
    */
-  const handleExpiredQuest = async (playerData, countdownEndTime, now) => {
+  const handleExpiredQuest = useCallback(async () => {
     try {
       if (!userId) {
         throw new Error('User ID is required');
       }
 
-      // Get current state from AsyncStorage
-      const { state: currentState } = await QuestStateManager.getCurrentState();
-      
-      // Only proceed if we're in cooldown state
-      if (currentState !== QuestStates.COOLDOWN) {
-        return;
+      const result = await QuestStateManager.handleQuestExpiration(userId, db);
+      if (result.success) {
+        setQuestState(QuestStates.ACTIVE);
+        setCountdownEnd(result.countdownEnd);
+        await loadTodayQuest();
       }
-
-      // Validate state transition
-      await QuestStateManager.validateStateTransition(currentState, QuestStates.EXPIRED);
-
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      const userData = userDoc.data();
-
-      // Calculate missed time
-      const missedTime = now - countdownEndTime;
-      const missedDays = Math.floor(missedTime / (24 * 60 * 60 * 1000));
-
-      // Use transaction for atomic updates
-      await runTransaction(db, async (transaction) => {
-        const userRef = doc(db, 'users', userId);
-        const userDoc = await transaction.get(userRef);
-        
-        if (!userDoc.exists()) {
-          throw new Error('User document does not exist');
-        }
-
-        // Calculate new cooldown end time
-        const newCountdownEnd = await QuestStateManager.calculateCooldownEnd(
-          now,
-          0,
-          userData.countdownEnd?.toMillis()
-        );
-        
-        transaction.update(userRef, {
-          questState: QuestStates.ACTIVE,
-          countdownEnd: newCountdownEnd,
-          lastQuestGeneratedAt: Timestamp.now()
-        });
-      });
-
-      // Update local state
-      await QuestStateManager.persistState(QuestStates.ACTIVE);
-      setQuestState(QuestStates.ACTIVE);
-      setCountdownEnd(await QuestStateManager.calculateCooldownEnd(now));
-
-      // Clear saved countdown end
-      await AsyncStorage.removeItem(COUNTDOWN_END_KEY);
-
+      return result;
     } catch (error) {
       console.error('Error handling expired quest:', error);
-      setError(error.message);
-      Alert.alert(
-        "Error",
-        `Failed to handle expired quest: ${error.message}`,
-        [{ text: "OK" }]
-      );
+      return {
+        success: false,
+        error: error.message
+      };
     }
-  };
+  }, [userId, db, loadTodayQuest]);
 
   return {
     loading,

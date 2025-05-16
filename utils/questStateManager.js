@@ -12,53 +12,134 @@ export const QuestStates = {
   EXPIRED: 'expired'
 };
 
-export const StateTransitions = {
-  [QuestStates.ACTIVE]: [QuestStates.COMPLETED, QuestStates.FAILED, QuestStates.EXPIRED, QuestStates.COOLDOWN],
-  [QuestStates.COOLDOWN]: [QuestStates.ACTIVE, QuestStates.EXPIRED],
-  [QuestStates.COMPLETED]: [QuestStates.COOLDOWN, QuestStates.ACTIVE],
-  [QuestStates.FAILED]: [QuestStates.ACTIVE],
-  [QuestStates.EXPIRED]: [QuestStates.ACTIVE]
+const STATE_TRANSITIONS = {
+  [QuestStates.ACTIVE]: [QuestStates.COMPLETED, QuestStates.EXPIRED],
+  [QuestStates.COMPLETED]: [QuestStates.COOLDOWN],
+  [QuestStates.COOLDOWN]: [QuestStates.ACTIVE],
+  [QuestStates.EXPIRED]: [QuestStates.COOLDOWN]
 };
 
 export class QuestStateManager {
-  static async validateStateTransition(currentState, newState) {
-    // Allow same-state transitions
-    if (currentState === newState) {
-      return true;
+  static async getCurrentState() {
+    try {
+      const state = await AsyncStorage.getItem('@quest_state');
+      const countdownEnd = await AsyncStorage.getItem('@quest_countdown_end');
+      return {
+        state: state || QuestStates.ACTIVE,
+        countdownEnd: countdownEnd ? Timestamp.fromMillis(parseInt(countdownEnd)) : null
+      };
+    } catch (error) {
+      console.error('Error getting quest state:', error);
+      return { state: QuestStates.ACTIVE, countdownEnd: null };
     }
+  }
 
-    // Validate state transition if states are different
-    if (!StateTransitions[currentState]?.includes(newState)) {
+  static async persistState(state, countdownEnd = null) {
+    try {
+      await AsyncStorage.setItem('@quest_state', state);
+      if (countdownEnd) {
+        await AsyncStorage.setItem('@quest_countdown_end', countdownEnd.toMillis().toString());
+      }
+    } catch (error) {
+      console.error('Error persisting quest state:', error);
+    }
+  }
+
+  static async validateStateTransition(currentState, newState) {
+    const allowedTransitions = STATE_TRANSITIONS[currentState] || [];
+    if (!allowedTransitions.includes(newState)) {
       throw new Error(`Invalid state transition from ${currentState} to ${newState}`);
     }
     return true;
   }
 
-  static async persistState(state, timestamp = Date.now()) {
+  static async calculateCooldownEnd(currentTime, timezoneOffset = 0) {
     try {
-      await AsyncStorage.multiSet([
-        [QUEST_STATE_KEY, state],
-        [LAST_STATE_CHANGE_KEY, timestamp.toString()]
-      ]);
+      // Get next reset time (midnight)
+      const now = new Date(currentTime);
+      const nextReset = new Date(now);
+      nextReset.setHours(24, 0, 0, 0); // Set to next midnight
+      
+      // Calculate cooldown duration (time until next reset)
+      const cooldownDuration = nextReset.getTime() - currentTime;
+      
+      // Return timestamp for next reset
+      return Timestamp.fromMillis(nextReset.getTime());
     } catch (error) {
-      console.error('Error persisting quest state:', error);
-      throw new Error('Failed to persist quest state');
+      console.error('Error calculating cooldown end:', error);
+      // Fallback to 24 hours from now
+      return Timestamp.fromMillis(currentTime + (24 * 60 * 60 * 1000));
     }
   }
 
-  static async getCurrentState() {
+  static async getRemainingCooldownTime(currentTime, countdownEnd) {
+    if (!countdownEnd) return 0;
+    
     try {
-      const [state, lastChange] = await AsyncStorage.multiGet([
-        QUEST_STATE_KEY,
-        LAST_STATE_CHANGE_KEY
-      ]);
+      const endTime = countdownEnd.toMillis();
+      const remainingTime = endTime - currentTime;
+      return Math.max(0, remainingTime);
+    } catch (error) {
+      console.error('Error getting remaining cooldown time:', error);
+      return 0;
+    }
+  }
+
+  static async handleQuestCompletion(userId, db) {
+    try {
+      const now = Timestamp.now();
+      const { state: currentState } = await this.getCurrentState();
+      
+      // Validate state transition
+      await this.validateStateTransition(currentState, QuestStates.COMPLETED);
+      
+      // Calculate new cooldown end (time until next reset)
+      const newCountdownEnd = await this.calculateCooldownEnd(now.toMillis());
+      
+      // Update state
+      await this.persistState(QuestStates.COOLDOWN, newCountdownEnd);
+      
+      // Calculate remaining hours until next reset
+      const remainingHours = Math.ceil((newCountdownEnd.toMillis() - now.toMillis()) / (60 * 60 * 1000));
+      
       return {
-        state: state[1] || QuestStates.ACTIVE,
-        lastChange: parseInt(lastChange[1] || '0')
+        success: true,
+        countdownEnd: newCountdownEnd,
+        remainingHours: remainingHours
       };
     } catch (error) {
-      console.error('Error retrieving quest state:', error);
-      return { state: QuestStates.ACTIVE, lastChange: 0 };
+      console.error('Error handling quest completion:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  static async handleQuestExpiration(userId, db) {
+    try {
+      const now = Timestamp.now();
+      const { state: currentState } = await this.getCurrentState();
+      
+      // Validate state transition
+      await this.validateStateTransition(currentState, QuestStates.EXPIRED);
+      
+      // Calculate new cooldown end
+      const newCountdownEnd = await this.calculateCooldownEnd(now.toMillis());
+      
+      // Update state
+      await this.persistState(QuestStates.COOLDOWN, newCountdownEnd);
+      
+      return {
+        success: true,
+        countdownEnd: newCountdownEnd
+      };
+    } catch (error) {
+      console.error('Error handling quest expiration:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
@@ -91,28 +172,6 @@ export class QuestStateManager {
       intelligence: Math.max(0, currentStats.intelligence - Math.floor(1 * penaltyMultiplier)),
       sense: Math.max(0, currentStats.sense - Math.floor(1 * penaltyMultiplier))
     };
-  }
-
-  static async calculateCooldownEnd(currentTime, timezoneOffset = 0, lastCountdownEnd = null) {
-    // If we have a previous countdown end, calculate remaining time
-    if (lastCountdownEnd) {
-      const remainingTime = lastCountdownEnd - currentTime;
-      if (remainingTime > 0) {
-        return Timestamp.fromMillis(lastCountdownEnd);
-      }
-    }
-
-    // Otherwise, start a new 24-hour cooldown
-    const cooldownDuration = 24 * 60 * 60 * 1000; // 24 hours
-    return Timestamp.fromMillis(currentTime + cooldownDuration + timezoneOffset);
-  }
-
-  static async getRemainingCooldownTime(currentTime, countdownEnd) {
-    if (!countdownEnd) return 0;
-    
-    const endTime = countdownEnd.toMillis();
-    const remainingTime = endTime - currentTime;
-    return Math.max(0, remainingTime);
   }
 
   static async validateQuestData(questData) {
