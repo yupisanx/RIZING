@@ -38,7 +38,11 @@ export default function MenuScreen() {
           {/* Row 1 */}
           <View style={styles.gridRow}>
             {/* Self-Care Areas */}
-            <TouchableOpacity style={styles.gridCard} activeOpacity={0.7}>
+            <TouchableOpacity 
+              style={styles.gridCard} 
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('SelfCareArea')}
+            >
               <View style={styles.selfCareIconContainer}>
                 <View style={styles.selfCareRow}>
                   <View style={[styles.colorDot, { backgroundColor: "#F97316" }]} />

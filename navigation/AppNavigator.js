@@ -12,6 +12,7 @@ import MenuScreen from '../screens/MenuScreen';
 import TabNavigator from './TabNavigator';
 import Menu from '../components/Menu';
 import LoadingScreen from '../screens/LoadingScreen';
+import SelfCareAreaScreen from '../screens/SelfCareAreaScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -88,6 +89,13 @@ export default function AppNavigator() {
             <Stack.Screen 
               name="Menu" 
               component={MenuScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen 
+              name="SelfCareArea" 
+              component={SelfCareAreaScreen}
               options={{
                 animation: 'slide_from_right',
               }}

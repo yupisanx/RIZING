@@ -10,7 +10,6 @@ import LoadingScreen from '../components/LoadingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import QuestScreen from '../screens/QuestScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import BabyWobblesProfile from '../screens/BabyWobblesProfile';
 
 const Tab = createBottomTabNavigator();
 
@@ -135,21 +134,6 @@ export default function TabNavigator() {
               />
             ),
             tabBarAccessibilityLabel: "Profile tab",
-          }}
-        />
-        <Tab.Screen
-          name="BabyWobbles"
-          component={BabyWobblesProfile}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <TabIcon 
-                name="happy" 
-                size={isTablet ? 32 : 28} 
-                color={color} 
-              />
-            ),
-            tabBarAccessibilityLabel: "Baby Wobbles tab",
-            tabBarLabel: "Baby",
           }}
         />
       </Tab.Navigator>

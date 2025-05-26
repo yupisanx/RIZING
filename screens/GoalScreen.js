@@ -94,8 +94,8 @@ export default function GoalScreen({ navigation }) {
         onRequestClose={() => setShowCustomModal(false)}
         statusBarTranslucent
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalContainer, Platform.OS === 'ios' && styles.modalContainerIOS]}>
+          <View style={[styles.modalContent, Platform.OS === 'ios' && styles.modalContentIOS]}>
             <View style={styles.modalHeader}>
               <TouchableOpacity 
                 onPress={() => setShowCustomModal(false)}
@@ -358,8 +358,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 30,
-    margin: 16,
-    padding: 20,
+    margin: 12,
+    padding: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -372,11 +372,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   iconContainer: {
     backgroundColor: "#f5f5f5",
-    padding: 12,
+    padding: 10,
     borderRadius: 50,
   },
   headerButtons: {
@@ -387,21 +387,21 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: 16,
-    marginBottom: 24,
+    marginBottom: 20,
     padding: 0,
   },
   optionsContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   option: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 50,
   },
   optionIcon: {
     backgroundColor: "#f5f5f5",
-    padding: 6,
+    padding: 5,
     borderRadius: 50,
     marginRight: 10,
   },
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 6,
   },
   moreOptionsText: {
     color: "#666",
@@ -421,8 +421,8 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: "#000",
-    paddingVertical: 10,
-    paddingHorizontal: 28,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
     borderRadius: 50,
   },
   saveButtonText: {
@@ -432,16 +432,24 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainerIOS: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: 20,
-    maxHeight: "80%",
-    width: "100%",
+    maxHeight: '80%',
+    width: '100%',
+  },
+  modalContentIOS: {
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
   modalHeader: {
     flexDirection: "row",

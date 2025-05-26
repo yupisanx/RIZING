@@ -1,19 +1,16 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity, Animated, ScrollView, Platform, useWindowDimensions } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useMenu } from '../contexts/MenuContext';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Icons } from '../components/Icons';
 import { useNavigation } from '@react-navigation/native';
 import MessageModal from '../components/MessageModal';
-import BottomSheet from '../components/BottomSheet';
-import Tab from '../components/common/Tab';
-import RadarChart from '../components/common/RadarChart';
 import { theme } from '../utils/theme';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import * as ImagePicker from 'expo-image-picker';
+import RadarChart from '../components/common/RadarChart';
 
 const SCREEN_PADDING = 20;
 const HEADER_HEIGHT = Platform.select({
@@ -26,95 +23,24 @@ const STATUS_BAR_HEIGHT = Platform.select({
 });
 
 export default function ProfileScreen() {
-  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const AVATAR_HEIGHT = width * 1.26;
   const navigation = useNavigation();
   const { toggleMenu, logout } = useMenu();
-
-  // Calculate responsive avatar margin
-  const avatarMarginTop = useMemo(() => {
-    const baseMargin = Platform.OS === 'ios' ? -190 : -height * 0.35 + 180;
-    const deviceScale = height / 844; // iPhone 14 Pro height as reference
-    return baseMargin * deviceScale;
-  }, [height]);
-
   const { user } = useAuth();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
-  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('ABOUT');
+  const [profileImage, setProfileImage] = useState(null);
   const isMounted = useRef(true);
-  const navigationTimeoutRef = useRef(null);
-  const lastToggleTime = useRef(Date.now());
-  const MIN_TOGGLE_INTERVAL = 300; // Minimum time between toggles in ms
-  const isAnimating = useRef(false);
-  const [activeTab, setActiveTab] = useState(0);
-  const tabs = ['Info', 'Stats', 'Inventory'];
 
   // Clear any pending timeouts when component unmounts
   useEffect(() => {
     return () => {
       isMounted.current = false;
-      if (navigationTimeoutRef.current) {
-        clearTimeout(navigationTimeoutRef.current);
-      }
     };
   }, []);
-
-  const safeSetBottomSheetVisible = (visible) => {
-    const now = Date.now();
-    const timeSinceLastToggle = now - lastToggleTime.current;
-
-    // If we're animating or toggling too quickly, queue the change
-    if (isAnimating.current || timeSinceLastToggle < MIN_TOGGLE_INTERVAL) {
-      if (navigationTimeoutRef.current) {
-        clearTimeout(navigationTimeoutRef.current);
-      }
-      navigationTimeoutRef.current = setTimeout(() => {
-        if (isMounted.current) {
-          lastToggleTime.current = Date.now();
-          setIsBottomSheetVisible(visible);
-        }
-      }, MIN_TOGGLE_INTERVAL);
-      return;
-    }
-
-    // Otherwise, update immediately
-    lastToggleTime.current = now;
-    setIsBottomSheetVisible(visible);
-  };
-
-  useEffect(() => {
-    const handleFocus = () => {
-      safeSetBottomSheetVisible(true);
-    };
-
-    const handleBlur = () => {
-      // Only hide if we've been visible for at least MIN_TOGGLE_INTERVAL
-      const timeSinceLastToggle = Date.now() - lastToggleTime.current;
-      if (timeSinceLastToggle >= MIN_TOGGLE_INTERVAL) {
-        safeSetBottomSheetVisible(false);
-      }
-    };
-
-    const unsubscribe = navigation.addListener('focus', handleFocus);
-    const blurUnsubscribe = navigation.addListener('blur', handleBlur);
-
-    // Show bottom sheet initially if screen is focused
-    if (navigation.isFocused()) {
-      handleFocus();
-    }
-
-    return () => {
-      unsubscribe();
-      blurUnsubscribe();
-      if (navigationTimeoutRef.current) {
-        clearTimeout(navigationTimeoutRef.current);
-      }
-    };
-  }, [navigation]);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -132,9 +58,10 @@ export default function ProfileScreen() {
             
             if (doc.exists()) {
               const data = doc.data();
-              console.log('Real-time update received:', data);
+              console.log('User data from Firebase:', data); // Debug log
               setUserData(data);
             } else {
+              console.log('No user document found'); // Debug log
               setError('User data not found');
             }
             setLoading(false);
@@ -155,7 +82,6 @@ export default function ProfileScreen() {
     };
 
     setupRealtimeUpdates();
-
     return () => {
       isSubscribed = false;
       if (unsubscribe) {
@@ -164,85 +90,42 @@ export default function ProfileScreen() {
     };
   }, [user?.uid]);
 
-  const handleBottomSheetClose = () => {
-    if (isMounted.current) {
-      safeSetBottomSheetVisible(false);
-    }
-  };
+  const handleImagePick = async () => {
+    try {
+      // Request permissions
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to change profile picture.');
+        return;
+      }
 
-  const renderStatsChart = () => {
-    const data = {
-      labels: ['STR', 'VIT', 'AGI', 'INT', 'SEN'],
-      datasets: [
-        {
-          data: [
-            userData?.stats?.strength || 0,
-            userData?.stats?.vitality || 0,
-            userData?.stats?.agility || 0,
-            userData?.stats?.intelligence || 0,
-            userData?.stats?.sense || 0,
-          ],
-        },
-      ],
-    };
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
 
-    return (
-      <View style={styles.chartContainer}>
-        <RadarChart data={data} size={width - 40} color="#60a5fa" />
-        <View style={styles.statsContainer}>
-          <Text style={styles.statPointsLabel}>STAT POINTS</Text>
-          <Text style={styles.statPointsValue}>{userData?.statPoints || 0}</Text>
-        </View>
-      </View>
-    );
-  };
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 0: // Info
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.userDataRow}>
-              <Text style={styles.label}>Level:</Text>
-              <Text style={styles.value}>{userData?.level || '1'}</Text>
-            </View>
-            <View style={styles.userDataRow}>
-              <Text style={styles.label}>Class:</Text>
-              <Text style={styles.value}>{userData?.class || 'N/A'}</Text>
-            </View>
-            <View style={styles.userDataRow}>
-              <Text style={styles.label}>Focus Area:</Text>
-              <Text style={styles.value}>{userData?.focusArea || 'None selected'}</Text>
-            </View>
-            <View style={styles.userDataRow}>
-              <Text style={styles.label}>Training Frequency:</Text>
-              <Text style={styles.value}>{userData?.frequency || 'N/A'}</Text>
-            </View>
-            <View style={styles.userDataRow}>
-              <Text style={styles.label}>Streak:</Text>
-              <Text style={styles.value}>{userData?.streak || '0'} days</Text>
-            </View>
-          </View>
-        );
-      case 1: // Stats
-        return (
-          <View style={styles.tabContent}>
-            {renderStatsChart()}
-          </View>
-        );
-      case 2: // Inventory
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.inventoryContainer}>
-              <View style={styles.coinsRow}>
-                <FontAwesome5 name="coins" size={20} color="#60a5fa" />
-                <Text style={styles.coinsValue}>{userData?.coins || '0'}</Text>
-              </View>
-            </View>
-          </View>
-        );
-      default:
-        return null;
+      if (!result.canceled) {
+        setProfileImage(result.assets[0].uri);
+        
+        // Update user data in Firestore
+        if (user?.uid) {
+          try {
+            await updateDoc(doc(db, 'users', user.uid), {
+              profileImage: result.assets[0].uri
+            });
+          } catch (error) {
+            console.error('Error updating profile image:', error);
+            Alert.alert('Error', 'Failed to update profile image. Please try again.');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
 
@@ -296,10 +179,6 @@ export default function ProfileScreen() {
     );
   }
 
-  const avatarSource = userData.gender === 'male' 
-    ? require('../assets/avatars/male-avatar.png')
-    : require('../assets/avatars/female-avatar.png');
-
   return (
     <View style={styles.container}>
       {/* Header Icons */}
@@ -325,49 +204,146 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={true}
-        decelerationRate="normal"
       >
-        <View style={[styles.mainContent, { minHeight: height * 0.8, marginTop: Platform.OS === 'android' ? -STATUS_BAR_HEIGHT : 0 }]}>
-          <View style={styles.usernameContainer}>
-            <View style={styles.usernameWrapper}>
-              <Ionicons name="settings" size={Platform.OS === 'android' ? 24 : 20} color="#60a5fa" />
-              <Text style={styles.username}>{user?.displayName || 'User'}</Text>
+        <View style={styles.mainContent}>
+          {/* Main Card */}
+          <View style={[
+            styles.mainCard,
+            activeTab === 'STATS' && styles.mainCardExpanded
+          ]}>
+            <View style={styles.contentContainer}>
+              {/* Image and Title Section */}
+              <View style={styles.headerSection}>
+                <TouchableOpacity 
+                  style={styles.imageContainer}
+                  onPress={handleImagePick}
+                >
+                  {profileImage ? (
+                    <Image 
+                      source={{ uri: profileImage }} 
+                      style={styles.imagePlaceholder}
+                    />
+                  ) : (
+                    <View style={styles.imagePlaceholder}>
+                      <Icons name="camera" size={40} color="#60a5fa" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <View style={styles.titleContainer}>
+                  <Text style={styles.profileName}>
+                    {userData?.username || userData?.displayName || 'Loading...'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Info Section */}
+              {activeTab === 'ABOUT' && (
+                <View style={styles.infoContainer}>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>AGE</Text>
+                    <Text style={styles.infoValue}>14 days</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>FRIENDSHIP</Text>
+                    <View style={styles.friendshipContainer}>
+                      <Text style={styles.infoValue}>Pals</Text>
+                      <View style={styles.heartIcon} />
+                    </View>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>HUMAN</Text>
+                    <Text style={[styles.infoValue, styles.unknownText]}>Unknown</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>FRIEND CODE</Text>
+                    <View style={styles.codeContainer}>
+                      <View style={styles.dotsContainer}>
+                        {[...Array(7)].map((_, i) => (
+                          <View key={i} style={[styles.dot, styles.activeDot]} />
+                        ))}
+                        {[...Array(3)].map((_, i) => (
+                          <View key={i + 7} style={[styles.dot]} />
+                        ))}
+                      </View>
+                      <View style={styles.eyeIcon} />
+                    </View>
+                  </View>
+                </View>
+              )}
+              
+              {activeTab === 'STATS' && (
+                <View style={styles.statsContainer}>
+                  <ScrollView 
+                    style={styles.statsScrollView}
+                    contentContainerStyle={styles.statsScrollContent}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled={true}
+                    scrollEnabled={true}
+                  >
+                    <RadarChart 
+                      data={{
+                        labels: ['STRENGTH', 'VITALITY', 'AGILITY', 'INTELLIGENCE', 'SENSE'],
+                        datasets: [{
+                          data: [
+                            userData?.stats?.strength || 0,
+                            userData?.stats?.vitality || 0,
+                            userData?.stats?.agility || 0,
+                            userData?.stats?.intelligence || 0,
+                            userData?.stats?.sense || 0
+                          ],
+                        }],
+                      }}
+                      size={280}
+                      color="#87CEEB"
+                    />
+                    <View style={styles.radarBottomSpace} />
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            {/* Bottom Tabs */}
+            <View style={styles.tabsWrapper}>
+              <View style={styles.tabsContainer}>
+                <TouchableOpacity 
+                  style={[styles.tabButton, activeTab === 'ABOUT' && styles.activeTabButton]}
+                  onPress={() => setActiveTab('ABOUT')}
+                >
+                  <Text style={[styles.tabText, activeTab === 'ABOUT' && styles.activeTabText]}>ABOUT</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.tabButton, activeTab === 'STATS' && styles.activeTabButton]}
+                  onPress={() => setActiveTab('STATS')}
+                >
+                  <Text style={[styles.tabText, activeTab === 'STATS' && styles.activeTabText]}>STATS</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-          <Image
-            source={avatarSource}
-            style={[styles.avatar, { width, height: AVATAR_HEIGHT, marginTop: avatarMarginTop }]}
-            resizeMode="contain"
-            accessibilityLabel={`${userData.gender} avatar`}
-          />
-        </View>
 
-        <View style={[styles.extraSpace, { height: height * 0.2 }]} />
+          {/* Streak Card */}
+          <TouchableOpacity style={styles.streakCard}>
+            <View style={styles.streakContent}>
+              <View style={styles.streakIconContainer}>
+                <Icons name="star" size={24} color="#FFD700" />
+              </View>
+              <View style={styles.streakTextContainer}>
+                <Text style={styles.streakCount}>{userData?.streak || '0'} day streak</Text>
+                <Text style={styles.streakSubtext}>Longest: {userData?.longestStreak || '0'} days</Text>
+              </View>
+              <Icons name="chevron-right" size={24} color="#8B8B8B" />
+            </View>
+          </TouchableOpacity>
+          
+          {/* Extra space at bottom */}
+          <View style={{ height: 160 }} />
+        </View>
       </ScrollView>
 
       <MessageModal
         visible={showMessageModal}
         onClose={() => setShowMessageModal(false)}
       />
-
-      <BottomSheet
-        isVisible={isBottomSheetVisible}
-        onClose={handleBottomSheetClose}
-        initialSnapPoint={0}
-        onAnimationStart={() => {
-          isAnimating.current = true;
-        }}
-        onAnimationEnd={() => {
-          isAnimating.current = false;
-        }}
-      >
-        <View style={styles.bottomSheetContent}>
-          <Tab tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-          <ScrollView style={styles.tabContent}>
-            {renderTabContent()}
-          </ScrollView>
-        </View>
-      </BottomSheet>
     </View>
   );
 }
@@ -392,151 +368,245 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 12,
     paddingTop: Platform.OS === 'android' ? 25 : 45,
-  },
-  loadingText: {
-    ...theme.typography.body,
-    color: '#ffffff',
-    textAlign: 'center',
+    paddingLeft: 0,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingTop: HEADER_HEIGHT + STATUS_BAR_HEIGHT,
+    paddingBottom: 160,
   },
   mainContent: {
     flex: 1,
+    paddingHorizontal: SCREEN_PADDING,
+  },
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    marginBottom: 15,
+    height: 440,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  mainCardExpanded: {
+    height: 520,
+  },
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 80,
+  },
+  headerSection: {
+    flexDirection: 'row',
+    marginBottom: 30,
+  },
+  imageContainer: {
+    marginRight: 15,
+  },
+  imagePlaceholder: {
+    width: 138,
+    height: 149,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 15,
+    marginTop: 5,
+    justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  titleContainer: {
+    flex: 1,
     justifyContent: 'center',
   },
-  avatar: {
-    resizeMode: 'contain',
+  profileName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 5,
   },
-  extraSpace: {
+  infoContainer: {
+    marginTop: -10,
+  },
+  infoRow: {
+    marginBottom: 12,
+  },
+  infoLabel: {
+    fontSize: 8,
+    color: '#E69138',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 13,
+    color: '#333333',
+    fontWeight: '500',
+  },
+  unknownText: {
+    color: '#999999',
+  },
+  friendshipContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heartIcon: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#999999',
+    borderRadius: 10,
+    marginLeft: 10,
+  },
+  codeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#999999',
+    marginRight: 5,
+  },
+  activeDot: {
+    backgroundColor: '#FFD700',
+  },
+  eyeIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#999999',
+    borderRadius: 12,
+  },
+  tabsWrapper: {
+    position: 'absolute',
+    bottom: -1,
+    left: 0,
+    right: 0,
+    padding: 10,
+    alignItems: 'center',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F8FF',
+    borderRadius: 25,
+    padding: 4,
     width: '100%',
   },
-  errorText: {
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  activeTabButton: {
+    backgroundColor: '#87CEEB',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#999999',
+    fontWeight: '600',
+  },
+  activeTabText: {
+    color: '#FFFFFF',
+  },
+  streakCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    padding: 15,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  streakContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streakIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF9E6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  streakTextContainer: {
+    flex: 1,
+  },
+  streakCount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  streakSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  loadingText: {
     ...theme.typography.body,
-    color: '#ef4444',
+    color: '#333',
     textAlign: 'center',
+    marginTop: 20,
+  },
+  errorText: {
+    color: '#ef4444',
   },
   retryButton: {
     backgroundColor: '#60a5fa',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
-    marginTop: 20,
+    marginTop: 10,
     alignSelf: 'center',
   },
   retryButtonText: {
     ...theme.typography.body,
     color: '#ffffff',
-    textAlign: 'center',
-  },
-  bottomSheetContent: {
-    flex: 1,
-    paddingTop: 0,
-  },
-  tabContent: {
-    flex: 1,
-    paddingHorizontal: 10,
-  },
-  sectionContainer: {
-    marginBottom: 16,
-  },
-  userDataRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  label: {
-    ...theme.typography.body,
-    color: '#ffffff',
-    marginRight: 8,
-  },
-  value: {
-    ...theme.typography.body,
-    color: '#60a5fa',
-  },
-  comingSoonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
-  },
-  comingSoon: {
-    ...theme.typography.h2,
-    color: '#ffffff',
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  comingSoonSubtitle: {
-    ...theme.typography.body,
-    color: '#ffffff',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  chartContainer: {
-    alignItems: 'center',
-    marginTop: -10,
-    marginBottom: 16,
+    fontSize: 16,
   },
   statsContainer: {
     alignItems: 'center',
-    marginTop: 20,
-  },
-  statPointsLabel: {
-    fontFamily: 'PressStart2P',
-    fontSize: 12,
-    color: '#AAAAAA',
-    marginBottom: 4,
-  },
-  statPointsValue: {
-    fontFamily: 'PressStart2P',
-    fontSize: 24,
-    color: '#60a5fa',
-  },
-  usernameContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? -25 : -25,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  usernameWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    marginTop: Platform.OS === 'android' ? 0 : -5,
+    marginTop: -50,
+    marginBottom: 10,
+    height: Platform.OS === 'android' ? 400 : 320,
   },
-  username: {
-    color: '#60a5fa',
-    fontSize: Platform.OS === 'android' ? 22 : 18,
-    fontWeight: 'bold',
-    fontFamily: 'PressStart2P',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+  statsScrollView: {
+    width: '100%',
+    flex: 1,
   },
-  inventoryContainer: {
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingLeft: 5,
-  },
-  coinsRow: {
-    flexDirection: 'row',
+  statsScrollContent: {
     alignItems: 'center',
-    gap: 8,
+    paddingBottom: 80,
+    minHeight: Platform.OS === 'android' ? 400 : 320,
   },
-  coinsValue: {
-    fontFamily: 'PressStart2P',
-    fontSize: 20,
-    color: '#60a5fa',
+  radarBottomSpace: {
+    height: 80,
   },
 });
