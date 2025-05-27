@@ -9,6 +9,7 @@ import Icon from "react-native-vector-icons/Feather";
 import MaterialIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import * as Font from 'expo-font';
 import { useNavigation } from '@react-navigation/native';
+import ThreeDButton from '../components/ThreeDButton';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_HEIGHT = 40;
@@ -181,12 +182,11 @@ export default function HomeScreen() {
                   <Text style={[styles.goalTitle, { fontFamily: 'PressStart2P' }]}>{goal.title}</Text>
                   <View style={styles.goalRight}>
                     <Text style={[styles.energyValue, { fontFamily: 'PressStart2P' }]}>5⚡</Text>
-                    <TouchableOpacity
+                    <ThreeDButton
                       onPress={() => toggleGoalCompletion(goal.id)}
-                      style={[styles.checkContainer, goal.completed ? styles.checkCompleted : {}]}
-                    >
-                      {goal.completed && <MaterialIcons name="check" size={24} color="#22C55E" />}
-                    </TouchableOpacity>
+                      completed={goal.completed}
+                      size={42}
+                    />
                   </View>
                 </View>
                 <Modal
@@ -765,17 +765,6 @@ const styles = StyleSheet.create({
     color: '#60a5fa',
     marginRight: 12,
     fontFamily: 'PressStart2P',
-  },
-  checkContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#2A2A2A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkCompleted: {
-    backgroundColor: '#1F1F1F',
   },
   addGoalContainer: {
     flexDirection: 'row',
