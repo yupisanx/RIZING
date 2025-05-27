@@ -690,6 +690,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
     width: '80%',
+    borderWidth: 1,
+    borderColor: '#ffffff',
   },
   progressFill: {
     position: 'absolute',
