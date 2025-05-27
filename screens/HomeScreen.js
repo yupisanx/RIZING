@@ -115,7 +115,7 @@ export default function HomeScreen() {
           style={styles.iconButton}
           onPress={() => navigation.navigate('Menu')}
         >
-          <Icons name="menu" size={34} color="#60a5fa" />
+          <Icons name="menu" size={34} color="#9CA3AF" />
         </TouchableOpacity>
       </View>
 
@@ -731,7 +731,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   goalCard: {
-    backgroundColor: 'rgba(26, 26, 26, 0.8)',
+    backgroundColor: '#1F1F1F',
     borderRadius: 24,
     marginBottom: 16,
     shadowColor: '#000',
@@ -739,6 +739,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 0.3,
+    borderColor: '#9CA3AF',
   },
   goalContent: {
     flexDirection: 'row',
@@ -768,12 +770,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(42, 42, 42, 0.8)',
+    backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkCompleted: {
-    backgroundColor: 'rgba(26, 26, 26, 0.8)',
+    backgroundColor: '#1F1F1F',
   },
   addGoalContainer: {
     flexDirection: 'row',
@@ -783,7 +785,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: 'rgba(26, 26, 26, 0.8)',
+    backgroundColor: '#1F1F1F',
     borderRadius: 12,
     padding: 12,
     marginRight: 8,
@@ -791,7 +793,7 @@ const styles = StyleSheet.create({
     fontFamily: 'PressStart2P',
   },
   addButton: {
-    backgroundColor: 'rgba(42, 42, 42, 0.8)',
+    backgroundColor: '#2A2A2A',
     borderRadius: 12,
     padding: 12,
     justifyContent: 'center',
@@ -809,10 +811,12 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   addGoalButton: {
-    backgroundColor: 'rgba(42, 42, 42, 0.8)',
+    backgroundColor: '#1F1F1F',
     borderRadius: 24,
     padding: 16,
     width: '90%',
+    borderWidth: 0.3,
+    borderColor: '#9CA3AF',
   },
   addGoalContent: {
     flexDirection: 'row',
@@ -848,7 +852,7 @@ const styles = StyleSheet.create({
   },
   threeDotButton: {
     marginRight: 12,
-    marginLeft: -8,
+    marginLeft: -18,
     padding: 4,
     justifyContent: 'center',
     alignItems: 'center',

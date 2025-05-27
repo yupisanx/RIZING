@@ -188,14 +188,14 @@ export default function ProfileScreen() {
           onPress={() => navigation.navigate('Menu')}
           accessibilityLabel="Open menu"
         >
-          <Icons name="menu" size={34} color="#60a5fa" />
+          <Icons name="menu" size={34} color="#9CA3AF" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.iconButton}
           onPress={() => setShowMessageModal(true)}
           accessibilityLabel="Open messages"
         >
-          <Icons name="mail" size={34} color="#60a5fa" />
+          <Icons name="mail" size={34} color="#9CA3AF" />
         </TouchableOpacity>
       </View>
 
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_PADDING,
   },
   mainCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1F1F1F',
     borderRadius: 20,
     marginBottom: 15,
     height: 440,
@@ -395,6 +395,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     overflow: 'hidden',
+    borderWidth: 0.3,
+    borderColor: '#9CA3AF',
   },
   mainCardExpanded: {
     height: 520,
@@ -419,7 +421,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#E5E5E5',
   },
   titleContainer: {
@@ -429,7 +431,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#FFFFFF',
     marginBottom: 5,
   },
   infoContainer: {
@@ -446,7 +448,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 13,
-    color: '#333333',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   unknownText: {
@@ -498,7 +500,7 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: '#2A2A2A',
     borderRadius: 25,
     padding: 4,
     width: '100%',
@@ -522,14 +524,14 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
-    color: '#999999',
+    color: '#CCCCCC',
     fontWeight: '600',
   },
   activeTabText: {
     color: '#FFFFFF',
   },
   streakCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1F1F1F',
     borderRadius: 15,
     padding: 15,
     marginTop: 10,
@@ -541,6 +543,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    borderWidth: 0.3,
+    borderColor: '#9CA3AF',
   },
   streakContent: {
     flexDirection: 'row',
@@ -593,7 +597,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -50,
+    marginTop: -30,
     marginBottom: 10,
     height: Platform.OS === 'android' ? 400 : 320,
   },
