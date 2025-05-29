@@ -11,7 +11,13 @@ import {
 } from 'react-native';
 import Icon from "react-native-vector-icons/Feather";
 
-const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
+const DateTimeBottomSheet = ({ 
+  visible, 
+  onClose, 
+  onDateTimeSelect,
+  hideTimeSelection = false,
+  title = "Date & Time" 
+}) => {
   const [currentView, setCurrentView] = useState('main');
   const [selectedDate, setSelectedDate] = useState('Today');
   const [selectedTime, setSelectedTime] = useState('Any time');
@@ -22,6 +28,11 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
   const [selectedHour, setSelectedHour] = useState(9);
   const [selectedMinute, setSelectedMinute] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState('AM');
+
+  // Add scroll refs
+  const hourScrollRef = useRef(null);
+  const minuteScrollRef = useRef(null);
+  const periodScrollRef = useRef(null);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -38,7 +49,145 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
     { key: 'Sat', label: 'S' },
   ];
 
+  // Format hours without leading zeros (1-12)
+  const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
+  
+  // Create an array with extra items for circular scrolling
+  const getCircularMinutes = () => {
+    // Add last hour at the beginning and first hour at the end
+    const circularMinutes = [];
+    // Add last few minutes at the start
+    for (let i = 57; i <= 59; i++) {
+      circularMinutes.push(i.toString().padStart(2, '0'));
+    }
+    // Add all minutes
+    for (let i = 0; i < 60; i++) {
+      circularMinutes.push(i.toString().padStart(2, '0'));
+    }
+    // Add first few minutes at the end
+    for (let i = 0; i <= 2; i++) {
+      circularMinutes.push(i.toString().padStart(2, '0'));
+    }
+    return circularMinutes;
+  };
+
+  const getCircularHours = () => {
+    const circularHours = [];
+    // Add last few hours at the start
+    circularHours.push('10', '11', '12');
+    // Add all hours
+    for (let i = 1; i <= 12; i++) {
+      circularHours.push(i.toString());
+    }
+    // Add first few hours at the end
+    circularHours.push('1', '2', '3');
+    return circularHours;
+  };
+
+  const handleHourScroll = (event) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const itemHeight = 50;
+    const index = Math.round(y / itemHeight);
+    const adjustedIndex = ((index - 3 + 12) % 12) + 1;
+    setSelectedHour(adjustedIndex);
+  };
+
+  const handleMinuteScroll = (event) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const itemHeight = 50;
+    const index = Math.round(y / itemHeight);
+    const adjustedIndex = (index - 3 + 60) % 60;
+    setSelectedMinute(adjustedIndex);
+  };
+
+  const handlePeriodScroll = (event) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const itemHeight = 50;
+    const index = Math.round(y / itemHeight);
+    setSelectedPeriod(index === 3 ? 'AM' : 'PM');
+  };
+
+  const isItemSelected = (index, itemHeight, scrollViewHeight) => {
+    const centerY = scrollViewHeight / 2;
+    const itemY = index * itemHeight;
+    const itemCenterY = itemY + (itemHeight / 2);
+    return Math.abs(itemCenterY - centerY) < itemHeight / 2;
+  };
+
+  const renderPickerItems = (items, selectedValue, onSelect, scrollRef, type) => {
+    return (
+      <ScrollView
+        ref={scrollRef}
+        style={type === 'period' ? styles.periodColumn : styles.pickerColumn}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={50}
+        decelerationRate="fast"
+        onScroll={
+          type === 'hour' 
+            ? handleHourScroll 
+            : type === 'minute' 
+              ? handleMinuteScroll 
+              : type === 'period' 
+                ? handlePeriodScroll 
+                : undefined
+        }
+        scrollEventThrottle={16}
+        nestedScrollEnabled={true}
+        contentContainerStyle={styles.pickerContentContainer}
+      >
+        <View style={{ height: 100 }} />
+        {items.map((item, index) => {
+          const isInGreyArea = isItemSelected(index, 50, 250);
+          const isValueSelected = 
+            type === 'period' 
+              ? item === selectedValue
+              : parseInt(item) === selectedValue;
+          
+          return (
+            <TouchableOpacity
+              key={`${item}-${index}`}
+              style={[
+                styles.pickerItem,
+                isInGreyArea && styles.selectedPickerItem,
+              ]}
+              onPress={() => {
+                if (type === 'period') {
+                  onSelect(item);
+                } else {
+                  onSelect(parseInt(item));
+                }
+                // Scroll to position after selection
+                scrollRef.current?.scrollTo({
+                  y: (index - 3) * 50,
+                  animated: true,
+                });
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.pickerItemText,
+                isInGreyArea && styles.selectedPickerItemText,
+              ]}>
+                {item}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    );
+  };
+
   const handleDateSelect = (day) => {
+    const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Prevent selecting past dates
+    if (selectedDate < today) {
+      return;
+    }
+
     const newDate = `${months[currentMonth.getMonth()]} ${day}, ${currentMonth.getFullYear()}`;
     setSelectedCalendarDate(day);
     setSelectedDate(newDate);
@@ -82,6 +231,15 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
     onDateTimeSelect?.(date, selectedTime);
   };
 
+  const handleSave = () => {
+    if (hideTimeSelection) {
+      onDateTimeSelect(selectedDate);
+    } else {
+      onDateTimeSelect(selectedDate, selectedTime);
+    }
+    onClose();
+  };
+
   const renderMainView = () => (
     <View style={styles.optionItemContainer}>
       <View style={styles.section}>
@@ -98,59 +256,70 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
 
         <View style={styles.optionsList}>
           <TouchableOpacity
-            style={styles.optionButton}
+            style={[styles.optionButton, selectedDate === 'Today' && styles.selectedOptionButton]}
             onPress={() => handleSimpleDateSelect('Today')}
           >
-            <Text style={styles.optionButtonText}>Today</Text>
-            {selectedDate === 'Today' && (
-              <View style={styles.checkmark}>
-                <Icon name="check" size={20} color="#fff" />
-              </View>
-            )}
+            <View style={styles.optionButtonContent}>
+              <Text style={[styles.optionButtonText, selectedDate === 'Today' && styles.selectedOptionText]}>Today</Text>
+              {selectedDate === 'Today' && (
+                <View style={styles.checkmark}>
+                  <Icon name="check" size={20} color="#fff" />
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.optionButton}
+            style={[styles.optionButton, selectedDate === 'Tomorrow' && styles.selectedOptionButton]}
             onPress={() => handleSimpleDateSelect('Tomorrow')}
           >
-            <Text style={styles.optionButtonText}>Tomorrow</Text>
-            {selectedDate === 'Tomorrow' && (
-              <View style={styles.checkmark}>
-                <Icon name="check" size={20} color="#fff" />
-              </View>
-            )}
+            <View style={styles.optionButtonContent}>
+              <Text style={[styles.optionButtonText, selectedDate === 'Tomorrow' && styles.selectedOptionText]}>Tomorrow</Text>
+              {selectedDate === 'Tomorrow' && (
+                <View style={styles.checkmark}>
+                  <Icon name="check" size={20} color="#fff" />
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.optionButton}
+            style={[styles.optionButton]}
             onPress={() => setCurrentView('calendar')}
           >
-            <Text style={styles.optionButtonText}>On a date...</Text>
+            <View style={styles.optionButtonContent}>
+              <Text style={styles.optionButtonText}>On a date...</Text>
+              <Icon name="chevron-right" size={20} color="#666" />
+            </View>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.optionItem}>
-        <Text style={styles.optionText}>Time</Text>
-        <TouchableOpacity 
-          style={styles.dropdownButton}
-          onPress={() => setCurrentView('time')}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={styles.dropdownText}>{selectedTime}</Text>
-          <Icon name="chevron-down" size={20} color="#666" />
-        </TouchableOpacity>
-      </View>
+      {!hideTimeSelection && (
+        <View style={styles.optionItem}>
+          <Text style={styles.optionText}>Time</Text>
+          <TouchableOpacity 
+            style={styles.dropdownButton}
+            onPress={() => setCurrentView('time')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.dropdownText}>{selectedTime}</Text>
+            <Icon name="chevron-down" size={20} color="#666" />
+          </TouchableOpacity>
+        </View>
+      )}
 
-      <View style={styles.optionItem}>
-        <Text style={styles.optionText}>Notify me</Text>
-        <Switch
-          value={notifyMe}
-          onValueChange={setNotifyMe}
-          trackColor={{ false: '#E5E5E5', true: '#4CAF50' }}
-          thumbColor={'#FFFFFF'}
-        />
-      </View>
+      {!hideTimeSelection && (
+        <View style={styles.optionItem}>
+          <Text style={styles.optionText}>Notify me</Text>
+          <Switch
+            value={notifyMe}
+            onValueChange={setNotifyMe}
+            trackColor={{ false: '#E5E5E5', true: '#4CAF50' }}
+            thumbColor={'#FFFFFF'}
+          />
+        </View>
+      )}
     </View>
   );
 
@@ -176,7 +345,7 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
           key={day}
           style={[
             styles.dayButton,
-            selectedCalendarDate === day && styles.selectedDayButton,
+            selectedCalendarDate === day && !isPastDay && styles.selectedDayButton,
             new Date().getDate() === day && 
             new Date().getMonth() === currentMonth.getMonth() && 
             new Date().getFullYear() === currentMonth.getFullYear() && 
@@ -184,10 +353,11 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
             isPastDay && styles.pastDayButton
           ]}
           onPress={() => handleDateSelect(day)}
+          disabled={isPastDay}
         >
           <Text style={[
-            styles.dayText, 
-            selectedCalendarDate === day && styles.selectedDayText,
+            styles.dayText,
+            selectedCalendarDate === day && !isPastDay && styles.selectedDayText,
             new Date().getDate() === day && 
             new Date().getMonth() === currentMonth.getMonth() && 
             new Date().getFullYear() === currentMonth.getFullYear() && 
@@ -218,9 +388,9 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
   };
 
   const renderTimeView = () => (
-    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-      <View style={styles.optionItemContainer}>
-        <View style={styles.optionItem}>
+    <View style={styles.timeViewContainer}>
+      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.anyTimeContainer}>
           <Text style={styles.optionText}>Any time</Text>
           <Switch
             value={anyTimeEnabled}
@@ -229,33 +399,21 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
             thumbColor={'#FFFFFF'}
           />
         </View>
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
 
-        {!anyTimeEnabled && (
-          <>
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => handlePresetTimeSelect('Morning')}
-            >
-              <Text style={styles.optionButtonText}>Morning (9:00 AM)</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => handlePresetTimeSelect('Afternoon')}
-            >
-              <Text style={styles.optionButtonText}>Afternoon (1:00 PM)</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => handlePresetTimeSelect('Evening')}
-            >
-              <Text style={styles.optionButtonText}>Evening (8:00 PM)</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </ScrollView>
+      <TouchableOpacity 
+        style={styles.saveButton}
+        onPress={() => {
+          const time = 'Any time';
+          handleTimeSelect(time);
+          setCurrentView('main');
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.saveButtonText}>Save</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -265,22 +423,23 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
-        <View style={[styles.modalContent, { transform: [{ translateY: visible ? 0 : 100 }] }]}>
+      <TouchableOpacity 
+        style={styles.container} 
+        activeOpacity={1} 
+        onPress={() => {
+          if (currentView !== 'main') {
+            setCurrentView('main');
+          } else {
+            onClose();
+          }
+        }}
+      >
+        <TouchableOpacity 
+          style={[styles.modalContent, { transform: [{ translateY: visible ? 0 : 100 }] }]}
+          activeOpacity={1}
+          onPress={(e) => e.stopPropagation()}
+        >
           <View style={styles.modalHeader}>
-            <TouchableOpacity 
-              onPress={() => {
-                if (currentView !== 'main') {
-                  setCurrentView('main');
-                } else {
-                  onClose();
-                }
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.headerButton}
-            >
-              <Icon name="x" size={24} color="#666" />
-            </TouchableOpacity>
             {currentView === 'calendar' ? (
               <>
                 <Text style={styles.monthTitle}>
@@ -306,7 +465,6 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
                 <Text style={styles.modalTitle}>
                   {currentView === 'main' ? 'Date and time' : 'Select time'}
                 </Text>
-                <View style={styles.headerButton} />
               </>
             )}
           </View>
@@ -314,17 +472,17 @@ const DateTimeBottomSheet = ({ visible, onClose, onDateTimeSelect }) => {
           {currentView === 'main' && renderMainView()}
           {currentView === 'calendar' && renderCalendarView()}
           {currentView === 'time' && renderTimeView()}
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
     backgroundColor: '#fff',
@@ -332,25 +490,16 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30,
     padding: 20,
     paddingTop: 12,
-    maxHeight: '90%',
-    minHeight: 500,
+    maxHeight: '85%',
+    minHeight: 400,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
-    paddingLeft: 0,
-    paddingRight: 14,
+    paddingHorizontal: 14,
     height: 48,
-    marginTop: -8,
-  },
-  headerButton: {
-    width: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    marginLeft: 0,
   },
   modalTitle: {
     fontSize: 18,
@@ -358,6 +507,7 @@ const styles = StyleSheet.create({
     color: "#333",
     flex: 1,
     textAlign: 'center',
+    fontFamily: 'Cinzel-Regular',
   },
   optionItemContainer: {
     marginBottom: 12,
@@ -377,6 +527,7 @@ const styles = StyleSheet.create({
   optionText: {
     color: "#666",
     fontSize: 14,
+    fontFamily: 'Cinzel-Regular',
   },
   dropdownButton: {
     flexDirection: "row",
@@ -386,21 +537,34 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 14,
     marginRight: 4,
+    fontFamily: 'Cinzel-Regular',
   },
   optionsList: {
     marginTop: 16,
   },
   optionButton: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     padding: 16,
     borderRadius: 16,
     marginBottom: 8,
+    backgroundColor: "#f5f5f5",
+  },
+  selectedOptionButton: {
+    backgroundColor: "#f5f5f5",
+  },
+  optionButtonContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
   },
   optionButtonText: {
     color: "#666",
-    fontSize: 14,
+    fontSize: 16,
+    fontFamily: 'Cinzel-Regular',
+  },
+  selectedOptionText: {
+    color: "#000",
+    fontWeight: "500",
   },
   checkmark: {
     backgroundColor: "#000",
@@ -414,36 +578,36 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
-    marginTop: 28,
+    paddingTop: 15,
   },
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    paddingHorizontal: 8,
+    alignItems: 'center',
+    paddingHorizontal: 4,
   },
   dayButton: {
     width: '14.28%',
     aspectRatio: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginVertical: 8,
   },
   todayButton: {
     borderWidth: 1,
     borderColor: '#999999',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
   selectedDayButton: {
     backgroundColor: "#333",
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -451,6 +615,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     fontWeight: "500",
+    fontFamily: 'Cinzel-Regular',
   },
   selectedDayText: {
     color: "#fff",
@@ -462,9 +627,9 @@ const styles = StyleSheet.create({
   },
   daysHeader: {
     flexDirection: "row",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
     marginBottom: 16,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   dayHeader: {
     width: '14.28%',
@@ -472,6 +637,8 @@ const styles = StyleSheet.create({
     color: "#666",
     fontSize: 14,
     fontWeight: "500",
+    paddingHorizontal: 4,
+    fontFamily: 'Cinzel-Regular',
   },
   navigationButtons: {
     flexDirection: 'row',
@@ -491,14 +658,118 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
     flex: 1,
-    textAlign: 'center',
-    marginRight: 48,
+    textAlign: 'left',
+    paddingLeft: 8,
+    fontFamily: 'Cinzel-Regular',
   },
   pastDayButton: {
     opacity: 0.8,
   },
   pastDayText: {
     color: '#999999',
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    height: 250,
+    marginTop: -8,
+    position: 'relative',
+    marginLeft: -20,
+  },
+  pickerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: -20,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  selectedItemOverlay: {
+    height: 50,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    marginHorizontal: 10,
+  },
+  pickerColumn: {
+    flex: 1,
+    maxWidth: 60,
+  },
+  pickerContentContainer: {
+    paddingHorizontal: 10,
+  },
+  pickerItem: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginVertical: 4,
+  },
+  selectedPickerItem: {
+    backgroundColor: 'transparent',
+  },
+  pickerItemText: {
+    fontSize: 24,
+    color: '#CCCCCC',
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    fontFamily: 'Cinzel-Regular',
+  },
+  selectedPickerItemText: {
+    color: '#000000',
+    fontWeight: '500',
+  },
+  pickerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 100,
+    pointerEvents: 'none',
+  },
+  pickerGradientTop: {
+    top: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+  },
+  pickerGradientBottom: {
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+  },
+  anyTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+  },
+  timeViewContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  bottomSpacing: {
+    height: 80,
+  },
+  saveButton: {
+    backgroundColor: '#000000',
+    margin: 16,
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Cinzel-Regular',
   },
 });
 

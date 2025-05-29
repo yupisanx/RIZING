@@ -43,27 +43,27 @@ export const theme = {
   typography: {
     h1: {
       fontSize: getResponsiveFontSize(18),
-      fontFamily: FONTS.PressStart2P,
+      fontFamily: FONTS.Cinzel,
       lineHeight: getResponsiveFontSize(24),
     },
     h2: {
       fontSize: getResponsiveFontSize(16),
-      fontFamily: FONTS.PressStart2P,
+      fontFamily: FONTS.Cinzel,
       lineHeight: getResponsiveFontSize(22),
     },
     h3: {
       fontSize: getResponsiveFontSize(14),
-      fontFamily: FONTS.PressStart2P,
+      fontFamily: FONTS.Cinzel,
       lineHeight: getResponsiveFontSize(20),
     },
     body: {
       fontSize: getResponsiveFontSize(12),
-      fontFamily: FONTS.PressStart2P,
+      fontFamily: FONTS.Cinzel,
       lineHeight: getResponsiveFontSize(18),
     },
     caption: {
       fontSize: getResponsiveFontSize(10),
-      fontFamily: FONTS.PressStart2P,
+      fontFamily: FONTS.Cinzel,
       lineHeight: getResponsiveFontSize(16),
     },
   },

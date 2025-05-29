@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 
 export const globalStyles = StyleSheet.create({
   text: {
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
     fontSize: 14,
     letterSpacing: 1,
     color: '#FFFFFF',

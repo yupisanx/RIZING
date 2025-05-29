@@ -21,19 +21,23 @@ export const TYPOGRAPHY = {
     fontSize: 32,
     fontWeight: 'bold',
     color: COLORS.text,
+    fontFamily: 'Cinzel',
   },
   h2: {
     fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.text,
+    fontFamily: 'Cinzel',
   },
   body: {
     fontSize: 16,
     color: COLORS.text,
+    fontFamily: 'Cinzel',
   },
   small: {
     fontSize: 14,
     color: COLORS.text,
+    fontFamily: 'Cinzel',
   },
 };
 

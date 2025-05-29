@@ -115,10 +115,10 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
                 x={positions.label.x}
                 y={positions.label.y}
                 fill="#FFFFFF"
-                fontSize="10"
+                fontSize="13"
                 textAnchor="middle"
                 alignmentBaseline="middle"
-                fontFamily="PressStart2P"
+                fontFamily="Cinzel"
               >
                 {label}
               </SvgText>
@@ -126,10 +126,10 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
                 x={positions.value.x}
                 y={positions.value.y}
                 fill={color}
-                fontSize="12"
+                fontSize="15"
                 textAnchor="middle"
                 alignmentBaseline="middle"
-                fontFamily="PressStart2P"
+                fontFamily="Cinzel"
               >
                 {data.datasets[0].data[index]}
               </SvgText>

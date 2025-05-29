@@ -404,6 +404,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#1F2937",
     marginBottom: 2,
+    fontFamily: 'Cinzel',
   },
   aboutContent: {
     marginBottom: 12,
@@ -420,11 +421,13 @@ const styles = StyleSheet.create({
     color: "#D97706",
     letterSpacing: 1,
     marginBottom: 2,
+    fontFamily: 'Cinzel',
   },
   detailValue: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1F2937",
+    fontFamily: 'Cinzel',
   },
   unknownText: {
     color: "#9CA3AF",
@@ -537,9 +540,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#6B7280",
+    fontFamily: 'Cinzel',
   },
   activeTabText: {
     color: "#1F2937",
+    fontFamily: 'Cinzel',
   },
   streakCard: {
     backgroundColor: "#F3F4F6",
@@ -573,10 +578,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#7DD3FC",
+    fontFamily: 'Cinzel',
   },
   streakSubtitle: {
     fontSize: 14,
     color: "#6B7280",
+    fontFamily: 'Cinzel',
   },
   personalityDetails: {
     paddingHorizontal: 16,
@@ -590,11 +597,13 @@ const styles = StyleSheet.create({
     color: "#D97706",
     letterSpacing: 1,
     marginBottom: 4,
+    fontFamily: 'Cinzel',
   },
   personalityDetailValue: {
     fontSize: 14,
     color: "#1F2937",
     lineHeight: 20,
+    fontFamily: 'Cinzel',
   },
   scrollSpace: {
     height: 100,

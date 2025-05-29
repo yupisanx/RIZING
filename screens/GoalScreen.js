@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import {
   View,
   Text,
@@ -12,34 +12,161 @@ import {
   ScrollView,
   StatusBar,
   Platform,
+  Dimensions,
 } from "react-native"
 import Icon from "react-native-vector-icons/Feather"
+import DateTimeBottomSheet from "../components/DateTimeBottomSheet"
+
+const { height } = Dimensions.get('window');
 
 export default function GoalScreen({ navigation }) {
   const [goalText, setGoalText] = useState("")
   const [showRepeatModal, setShowRepeatModal] = useState(false)
-  const [showCustomModal, setShowCustomModal] = useState(false)
+  const [showCustomContent, setShowCustomContent] = useState(false)
+  const [showEndCalendar, setShowEndCalendar] = useState(false)
   const [repeatOption, setRepeatOption] = useState("Does not repeat")
   const [endOption, setEndOption] = useState("Never")
-
-  // Custom frequency options
-  const [frequencyType, setFrequencyType] = useState("Daily") // Daily, Weekly, Monthly
+  const [showEndOptions, setShowEndOptions] = useState(false)
+  const [showDateTimePicker, setShowDateTimePicker] = useState(false)
+  const [selectedDate, setSelectedDate] = useState("Today")
+  const [selectedTime, setSelectedTime] = useState("Any time")
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null)
+  const [frequencyType, setFrequencyType] = useState("Daily")
+  const [selectedNumber, setSelectedNumber] = useState(1)
   const [frequencyValue, setFrequencyValue] = useState("1 day")
-  const [selectedDays, setSelectedDays] = useState([1]) // For monthly
-  const [selectedWeekdays, setSelectedWeekdays] = useState(["Mon"]) // For weekly
+  const [selectedWeekdays, setSelectedWeekdays] = useState([])
+  const [selectedDays, setSelectedDays] = useState([])
+  const [isPickerVisible, setIsPickerVisible] = useState(false)
+  const pickerScrollRef = useRef(null)
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const daysOfWeek = [
+    { key: 'Sun', label: 'S' },
+    { key: 'Mon', label: 'M' },
+    { key: 'Tue', label: 'T' },
+    { key: 'Wed', label: 'W' },
+    { key: 'Thu', label: 'T' },
+    { key: 'Fri', label: 'F' },
+    { key: 'Sat', label: 'S' }
+  ];
+
+  const handleEndDateSelect = (day) => {
+    const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Prevent selecting past dates
+    if (selectedDate < today) {
+      return;
+    }
+
+    const newDate = `${months[currentMonth.getMonth()]} ${day}, ${currentMonth.getFullYear()}`;
+    setSelectedCalendarDate(day);
+    setEndOption(`Ends on ${newDate}`);
+    setShowEndCalendar(false);
+    setShowEndOptions(false);
+  };
+
+  const renderCalendarView = () => {
+    return (
+      <View style={styles.calendarContainer}>
+        <View style={styles.calendarHeader}>
+          <Text style={styles.monthTitle}>
+            {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          </Text>
+          <View style={styles.navigationButtons}>
+            <TouchableOpacity 
+              onPress={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} 
+              style={styles.navButton}
+            >
+              <Icon name="chevron-left" size={24} color="#999999" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} 
+              style={styles.navButton}
+            >
+              <Icon name="chevron-right" size={24} color="#999999" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.daysHeader}>
+          {daysOfWeek.map((day) => (
+            <Text key={day.key} style={styles.dayHeader}>{day.label}</Text>
+          ))}
+        </View>
+        <View style={styles.calendarGrid}>
+          {renderDays()}
+        </View>
+      </View>
+    );
+  };
+
+  const renderDays = () => {
+    const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
+    const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Add empty spaces for days before the first day of the month
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(<View key={`empty-${i}`} style={styles.dayButton} />);
+    }
+
+    // Add the actual days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+      const isPastDay = currentDate < today;
+
+      days.push(
+        <TouchableOpacity
+          key={day}
+          style={[
+            styles.dayButton,
+            selectedCalendarDate === day && !isPastDay && styles.selectedDayButton,
+            new Date().getDate() === day && 
+            new Date().getMonth() === currentMonth.getMonth() && 
+            new Date().getFullYear() === currentMonth.getFullYear() && 
+            styles.todayButton,
+            isPastDay && styles.pastDayButton
+          ]}
+          onPress={() => handleEndDateSelect(day)}
+          disabled={isPastDay}
+        >
+          <Text style={[
+            styles.dayText, 
+            selectedCalendarDate === day && !isPastDay && styles.selectedDayText,
+            new Date().getDate() === day && 
+            new Date().getMonth() === currentMonth.getMonth() && 
+            new Date().getFullYear() === currentMonth.getFullYear() && 
+            styles.todayText,
+            isPastDay && styles.pastDayText
+          ]}>
+            {day}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    // Add an extra empty space at the end to shift everything right
+    days.push(<View key="extra-space" style={styles.dayButton} />);
+
+    return days;
+  };
 
   const handleSave = () => {
     // Handle saving the goal
     console.log("Goal saved:", {
       goalText,
+      date: selectedDate,
+      time: selectedTime,
       repeatOption,
       endOption,
-      customFrequency: {
-        type: frequencyType,
-        value: frequencyValue,
-        selectedDays,
-        selectedWeekdays,
-      },
     })
     alert("Goal saved!")
     navigation.goBack()
@@ -47,11 +174,15 @@ export default function GoalScreen({ navigation }) {
 
   const handleRepeatOptionClick = (option) => {
     if (option === "Custom...") {
-      setShowCustomModal(true)
+      setShowCustomContent(true)
     } else {
       setRepeatOption(option)
       setShowRepeatModal(false)
     }
+  }
+
+  const handleBackFromCustom = () => {
+    setShowCustomContent(false)
   }
 
   const handleCustomSave = () => {
@@ -65,7 +196,7 @@ export default function GoalScreen({ navigation }) {
     }
 
     setRepeatOption(customText)
-    setShowCustomModal(false)
+    setShowCustomContent(false)
     setShowRepeatModal(false)
   }
 
@@ -85,133 +216,227 @@ export default function GoalScreen({ navigation }) {
     }
   }
 
-  const renderCustomFrequencyModal = () => {
+  const handleDateTimeSelect = (date, time) => {
+    setSelectedDate(date);
+    if (time) {
+      setSelectedTime(time);
+    }
+  };
+
+  const getMaxNumber = (type) => {
+    switch (type) {
+      case 'Weekly':
+        return 52;
+      case 'Monthly':
+        return 12;
+      default: // Daily
+        return 100;
+    }
+  };
+
+  const handleNumberSelect = (number) => {
+    setSelectedNumber(number);
+    const unit = frequencyType === 'Daily' ? 'day' : frequencyType === 'Weekly' ? 'week' : 'month';
+    setFrequencyValue(`${number} ${unit}${number > 1 ? 's' : ''}`);
+  };
+
+  const handleScroll = (event) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const itemHeight = 40;
+    const selectedIndex = Math.round(y / itemHeight);
+    const number = selectedIndex + 1;
+    const maxNumber = getMaxNumber(frequencyType);
+    
+    if (number >= 1 && number <= maxNumber) {
+      handleNumberSelect(number);
+    }
+  };
+
+  const handleFrequencyClick = () => {
+    console.log('Opening number picker');
+  };
+
+  const renderNumberPicker = () => {
+    const maxNumber = getMaxNumber(frequencyType);
+    const numbers = Array.from({ length: maxNumber }, (_, i) => i + 1);
+
     return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showCustomModal}
-        onRequestClose={() => setShowCustomModal(false)}
-        statusBarTranslucent
-      >
-        <View style={[styles.modalContainer, Platform.OS === 'ios' && styles.modalContainerIOS]}>
-          <View style={[styles.modalContent, Platform.OS === 'ios' && styles.modalContentIOS]}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity 
-                onPress={() => setShowCustomModal(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      <View style={styles.pickerWrapper}>
+        <View style={styles.pickerContainer}>
+          <ScrollView
+            ref={pickerScrollRef}
+            style={styles.pickerScrollView}
+            showsVerticalScrollIndicator={false}
+            snapToInterval={40}
+            decelerationRate="fast"
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={styles.pickerContentContainer}
+          >
+            {numbers.map((number) => (
+              <TouchableOpacity
+                key={number}
+                style={[
+                  styles.pickerItem,
+                  selectedNumber === number && styles.selectedPickerItem
+                ]}
+                activeOpacity={1}
+                onPress={() => {
+                  handleNumberSelect(number);
+                  pickerScrollRef.current?.scrollTo({
+                    y: (number - 1) * 40,
+                    animated: true
+                  });
+                }}
               >
-                <Icon name="x" size={24} color="#666" />
+                <Text style={[
+                  styles.pickerItemText,
+                  selectedNumber === number && styles.selectedPickerItemText
+                ]}>
+                  {number}
+                </Text>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Repeat</Text>
-              <View style={{ width: 24 }} />
-            </View>
-
-            {/* Frequency Type Tabs */}
-            <View style={styles.tabContainer}>
-              {["Daily", "Weekly", "Monthly"].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.tab, frequencyType === type && styles.activeTab]}
-                  onPress={() => {
-                    setFrequencyType(type);
-                    if (type === "Daily") setFrequencyValue("1 day");
-                    if (type === "Weekly") setFrequencyValue("1 week");
-                    if (type === "Monthly") setFrequencyValue("1 month");
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Text style={[styles.tabText, frequencyType === type && styles.activeTabText]}>{type}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Every X days/weeks/months */}
-            <View style={styles.optionContainer}>
-              <Text style={styles.optionLabel}>Every</Text>
-              <TouchableOpacity 
-                style={styles.dropdownButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.dropdownText}>{frequencyValue}</Text>
-                <Icon name="chevron-down" size={20} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Day selection for Weekly */}
-            {frequencyType === "Weekly" && (
-              <View style={styles.weekdayContainer}>
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <TouchableOpacity
-                    key={day}
-                    style={[styles.dayButton, selectedWeekdays.includes(day) && styles.selectedDayButton]}
-                    onPress={() => toggleWeekdaySelection(day)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={[styles.dayText, selectedWeekdays.includes(day) && styles.selectedDayText]}>
-                      {day}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {/* Day selection for Monthly */}
-            {frequencyType === "Monthly" && (
-              <ScrollView style={styles.monthDayScrollView}>
-                <View style={styles.monthDayContainer}>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                    <TouchableOpacity
-                      key={day}
-                      style={[styles.dayButton, selectedDays.includes(day) && styles.selectedDayButton]}
-                      onPress={() => toggleDaySelection(day)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Text style={[styles.dayText, selectedDays.includes(day) && styles.selectedDayText]}>{day}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            )}
-
-            {/* End date */}
-            <View style={styles.optionContainer}>
-              <Text style={styles.optionLabel}>Ends</Text>
-              <TouchableOpacity 
-                style={styles.dropdownButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.dropdownText}>{endOption}</Text>
-                <Icon name="chevron-down" size={20} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Save button */}
-            <View style={styles.saveButtonContainer}>
-              <TouchableOpacity 
-                style={styles.saveButton} 
-                onPress={handleCustomSave}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+            ))}
+          </ScrollView>
+          <View style={styles.pickerHighlight} pointerEvents="none" />
         </View>
-      </Modal>
+      </View>
     );
   };
 
-  const renderRepeatModal = () => {
+  const renderCustomContent = () => {
     return (
+      <>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity 
+            onPress={handleBackFromCustom}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Icon name="arrow-left" size={24} color="#666" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Custom Repeat</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        <View style={styles.tabContainer}>
+          {["Daily", "Weekly", "Monthly"].map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[styles.tab, frequencyType === type && styles.activeTab]}
+              onPress={() => {
+                setFrequencyType(type);
+                const newMax = getMaxNumber(type);
+                if (selectedNumber > newMax) {
+                  setSelectedNumber(1);
+                }
+                const unit = type === "Daily" ? "day" : type === "Weekly" ? "week" : "month";
+                setFrequencyValue(`${selectedNumber > newMax ? 1 : selectedNumber} ${unit}${selectedNumber > 1 ? 's' : ''}`);
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={[styles.tabText, frequencyType === type && styles.activeTabText]}>{type}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+          <TouchableOpacity 
+          style={styles.frequencyButton}
+            onPress={() => setIsPickerVisible(!isPickerVisible)}
+        >
+          <Text style={styles.frequencyText}>Every</Text>
+          <View style={styles.frequencyValueContainer}>
+            <Text style={styles.frequencyValue}>{frequencyValue}</Text>
+            <Icon name={isPickerVisible ? "chevron-up" : "chevron-down"} size={20} color="#666" />
+            </View>
+          </TouchableOpacity>
+
+        {isPickerVisible && renderNumberPicker()}
+
+        {frequencyType === "Weekly" && (
+          <View style={styles.weekdayContainer}>
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+              <TouchableOpacity
+                key={day + index}
+                style={[
+                  styles.weekdayButton,
+                  selectedWeekdays.includes(day) && styles.selectedWeekdayButton
+                ]}
+                onPress={() => toggleWeekdaySelection(day)}
+              >
+                <Text style={[
+                  styles.weekdayText,
+                  selectedWeekdays.includes(day) && styles.selectedWeekdayText
+                ]}>{day}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {frequencyType === "Monthly" && (
+          <ScrollView 
+            style={styles.monthDayScrollView}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.monthDayContainer}>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                <TouchableOpacity
+                  key={day}
+                  style={[
+                    styles.dayButton,
+                    selectedDays.includes(day) && styles.selectedDayButton
+                  ]}
+                  onPress={() => toggleDaySelection(day)}
+                >
+                  <Text style={[
+                    styles.dayText,
+                    selectedDays.includes(day) && styles.selectedDayText
+                  ]}>{day}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+      </>
+    );
+  };
+
+  const renderRepeatModal = () => (
       <Modal
         animationType="slide"
         transparent={true}
         visible={showRepeatModal}
-        onRequestClose={() => setShowRepeatModal(false)}
+      onRequestClose={() => {
+        if (showEndCalendar) {
+          setShowEndCalendar(false);
+        } else if (showCustomContent) {
+          setShowCustomContent(false);
+        } else {
+          setShowRepeatModal(false);
+        }
+      }}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+      <TouchableOpacity 
+        style={styles.modalContainer} 
+        activeOpacity={1}
+        onPress={() => {
+          if (showEndCalendar) {
+            setShowEndCalendar(false);
+          } else {
+            setShowRepeatModal(false);
+          }
+        }}
+      >
+        <TouchableOpacity 
+          style={[styles.modalContent, Platform.OS === 'ios' && styles.modalContentIOS]}
+          activeOpacity={1}
+          onPress={(e) => e.stopPropagation()}
+        >
+          {showEndCalendar ? (
+            renderCalendarView()
+          ) : showCustomContent ? (
+            renderCustomContent()
+          ) : (
+            <>
             <View style={styles.modalHeader}>
               <TouchableOpacity 
                 onPress={() => setShowRepeatModal(false)}
@@ -224,46 +449,94 @@ export default function GoalScreen({ navigation }) {
             </View>
 
             <View style={styles.optionItemContainer}>
-              <View style={styles.optionItem}>
-                <Text style={styles.optionText}>Does not repeat</Text>
+              <TouchableOpacity 
+                style={[styles.optionItem, repeatOption === "Does not repeat" && styles.selectedOptionItem]}
+                onPress={() => handleRepeatOptionClick("Does not repeat")}
+              >
+                <Text style={[styles.optionText, repeatOption === "Does not repeat" && styles.selectedOptionText]}>Does not repeat</Text>
                 {repeatOption === "Does not repeat" && (
                   <View style={styles.checkmark}>
                     <Icon name="check" size={20} color="#fff" />
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
 
               <View style={styles.optionItem}>
                 <Text style={styles.optionText}>Ends</Text>
                 <TouchableOpacity 
                   style={styles.dropdownButton}
+                    onPress={() => setShowEndOptions(!showEndOptions)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Text style={styles.dropdownText}>{endOption}</Text>
-                  <Icon name="chevron-down" size={20} color="#666" />
+                    <Icon name={showEndOptions ? "chevron-up" : "chevron-down"} size={20} color="#666" />
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.optionsList}>
-                {["Every day", "Every weekday", "Every week on Mon", "Every month on the 12th", "Custom..."].map(
-                  (option) => (
+                {showEndOptions && (
+                  <View style={styles.endOptionsContainer}>
                     <TouchableOpacity
-                      key={option}
-                      style={styles.optionButton}
-                      onPress={() => handleRepeatOptionClick(option)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={[styles.endOptionButton, endOption === "Never" && styles.selectedOptionItem]}
+                      onPress={() => {
+                        setEndOption("Never");
+                        setShowEndOptions(false);
+                        setShowEndCalendar(false);
+                      }}
                     >
-                      <Text style={styles.optionButtonText}>{option}</Text>
+                      <Text style={[styles.optionText, endOption === "Never" && styles.selectedOptionText]}>Never</Text>
+                      {endOption === "Never" && (
+                        <View style={styles.checkmark}>
+                          <Icon name="check" size={20} color="#fff" />
+                        </View>
+                      )}
                     </TouchableOpacity>
-                  ),
+
+                    <TouchableOpacity
+                      style={[styles.endOptionButton, endOption.startsWith("Ends on") && styles.selectedOptionItem]}
+                      onPress={() => {
+                        setShowEndCalendar(true);
+                      }}
+                    >
+                      <Text style={[styles.optionText, endOption.startsWith("Ends on") && styles.selectedOptionText]}>On a date</Text>
+                      <Icon name="chevron-right" size={20} color="#666" />
+                    </TouchableOpacity>
+                  </View>
                 )}
+
+              <View style={styles.optionsList}>
+                {[
+                  "Every day",
+                  "Every weekday",
+                  "Every week on Mon",
+                  "Every month on the 12th",
+                  "Custom..."
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.optionButton, repeatOption === option && styles.selectedOptionItem]}
+                    onPress={() => handleRepeatOptionClick(option)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <View style={styles.optionButtonContent}>
+                      <Text style={[styles.optionButtonText, repeatOption === option && styles.selectedOptionText]}>
+                        {option}
+                      </Text>
+                      {repeatOption === option && (
+                        <View style={styles.checkmark}>
+                          <Icon name="check" size={20} color="#fff" />
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
-          </View>
-        </View>
+            </>
+          )}
+        </TouchableOpacity>
+      </TouchableOpacity>
       </Modal>
     );
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -305,12 +578,13 @@ export default function GoalScreen({ navigation }) {
 
           <TouchableOpacity 
             style={styles.option}
+            onPress={() => setShowDateTimePicker(true)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <View style={styles.optionIcon}>
               <Icon name="calendar" size={20} color="#000" />
             </View>
-            <Text style={styles.optionText}>Today</Text>
+            <Text style={styles.optionText}>{selectedDate}{selectedTime !== "Any time" ? `, ${selectedTime}` : ""}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -342,7 +616,11 @@ export default function GoalScreen({ navigation }) {
       </View>
 
       {renderRepeatModal()}
-      {renderCustomFrequencyModal()}
+      <DateTimeBottomSheet 
+        visible={showDateTimePicker}
+        onClose={() => setShowDateTimePicker(false)}
+        onDateTimeSelect={handleDateTimeSelect}
+      />
     </SafeAreaView>
   );
 }
@@ -358,8 +636,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 30,
-    margin: 12,
-    padding: 16,
+    margin: 6,
+    padding: 18,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -367,6 +645,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     width: '90%',
     maxWidth: 400,
+    minHeight: height * 0.4,
   },
   cardHeader: {
     flexDirection: "row",
@@ -384,14 +663,16 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     marginLeft: 12,
+    marginTop: 8,
   },
   input: {
     fontSize: 16,
     marginBottom: 20,
     padding: 0,
+    fontFamily: 'Cinzel',
   },
   optionsContainer: {
-    marginBottom: 20,
+    marginBottom: -20,
   },
   option: {
     flexDirection: "row",
@@ -408,27 +689,31 @@ const styles = StyleSheet.create({
   optionText: {
     color: "#666",
     fontSize: 14,
+    fontFamily: 'Cinzel-Regular',
   },
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 6,
+    marginTop: 35,
   },
   moreOptionsText: {
     color: "#666",
     fontSize: 14,
+    fontFamily: 'Cinzel',
+    marginTop: 5,
   },
   saveButton: {
     backgroundColor: "#000",
     paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderRadius: 50,
+    paddingHorizontal: 36,
+    borderRadius: 16,
   },
   saveButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "500",
+    fontFamily: 'Cinzel',
   },
   modalContainer: {
     flex: 1,
@@ -443,7 +728,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: '65%',
     width: '100%',
   },
   modalContentIOS: {
@@ -459,8 +744,11 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "500",
-    color: "#666",
+    fontWeight: "600",
+    color: "#333",
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: 'Cinzel-Regular',
   },
   optionItemContainer: {
     marginBottom: 12,
@@ -474,6 +762,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 12,
   },
+  selectedOptionItem: {
+    backgroundColor: "#f0f0f0"
+  },
   checkmark: {
     backgroundColor: "#000",
     borderRadius: 50,
@@ -485,7 +776,9 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     color: "#666",
+    fontSize: 14,
     marginRight: 4,
+    fontFamily: 'Cinzel-Regular',
   },
   optionsList: {
     marginTop: 16,
@@ -494,33 +787,48 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     marginBottom: 8,
+    backgroundColor: "#f5f5f5",
+  },
+  optionButtonContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
   },
   optionButtonText: {
     color: "#666",
     fontSize: 16,
+    fontFamily: 'Cinzel-Regular',
   },
   tabContainer: {
     flexDirection: "row",
     backgroundColor: "#f5f5f5",
     borderRadius: 16,
     marginBottom: 24,
+    padding: 4,
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
     alignItems: "center",
-    borderRadius: 16,
+    borderRadius: 12,
   },
   activeTab: {
     backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   tabText: {
     color: "#999",
     fontSize: 16,
+    fontFamily: 'Cinzel',
   },
   activeTabText: {
     color: "#000",
-    fontWeight: "500",
+    fontWeight: "600",
   },
   optionContainer: {
     flexDirection: "row",
@@ -534,11 +842,338 @@ const styles = StyleSheet.create({
   optionLabel: {
     color: "#666",
     fontSize: 16,
+    fontFamily: 'Cinzel',
   },
   weekdayContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 16,
+  },
+  weekdayButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectedWeekdayButton: {
+    backgroundColor: "#000",
+  },
+  weekdayText: {
+    fontSize: 14,
+    color: "#666",
+    fontFamily: 'Cinzel',
+  },
+  selectedWeekdayText: {
+    color: "#fff",
+  },
+  saveButtonContainer: {
+    alignItems: "flex-end",
+    marginTop: 16,
+  },
+  selectedOptionText: {
+    color: "#000",
+    fontWeight: "500",
+    fontFamily: 'Cinzel',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalInner: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  verticalPickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 16,
+    height: 150,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#fff',
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#666',
+    fontFamily: 'Cinzel',
+  },
+  pickerValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pickerValue: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginRight: 4,
+    fontFamily: 'Cinzel',
+  },
+  pickerArrow: {
+    marginTop: 2,
+  },
+  pickerWrapper: {
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    marginBottom: 16,
+    height: 140,
+    padding: 0,
+    width: '100%',
+  },
+  pickerContainer: {
+    height: 120,
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    position: 'relative',
+    width: '100%',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+  },
+  pickerScrollView: {
+    flex: 1,
+    backgroundColor: '#fff',
+    width: '100%',
+  },
+  pickerContentContainer: {
+    paddingVertical: 0,
+    width: '100%',
+  },
+  pickerItem: {
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  selectedPickerItem: {
+    backgroundColor: '#F2F3F5',
+    borderRadius: 12,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  pickerItemText: {
+    fontSize: 22,
+    color: '#222',
+    fontFamily: 'Cinzel',
+    textAlign: 'center',
+    opacity: 0.4,
+  },
+  selectedPickerItemText: {
+    color: '#111',
+    fontWeight: 'bold',
+    fontSize: 26,
+    opacity: 1,
+  },
+  pickerHighlight: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    zIndex: 2,
+    pointerEvents: 'none',
+    width: '100%',
+  },
+  pickerGradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 12,
+    backgroundColor: '#f5f5f5',
+    zIndex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  pickerGradientBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 12,
+    backgroundColor: '#f5f5f5',
+    zIndex: 1,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  verticalPicker: {
+    height: 150,
+  },
+  pickerContent: {
+    paddingVertical: 55,
+  },
+  pickerPadding: {
+    height: 100,
+  },
+  numberItem: {
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  numberText: {
+    fontSize: 18,
+    color: '#999',
+    fontWeight: '400',
+    fontFamily: 'Cinzel',
+  },
+  selectedNumberText: {
+    color: '#000',
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: 'Cinzel',
+  },
+  pickerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 40,
+    zIndex: 2,
+  },
+  pickerGradientTop: {
+    top: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+  },
+  pickerGradientBottom: {
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+  },
+  collapsedContainer: {
+    height: 'auto',
+  },
+  endOptionsContainer: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 16,
+    marginTop: -8,
+    marginBottom: 12,
+    overflow: 'hidden'
+  },
+  endOptionButton: {
+    flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+  },
+  calendarContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    paddingTop: 15,
+    marginTop: 0,
+    marginBottom: 16,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 24,
+    marginTop: 0,
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    fontFamily: 'Cinzel-Regular',
+  },
+  navigationButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  navButton: {
+    padding: 4,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  daysHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  dayHeader: {
+    width: '14.28%',
+    textAlign: 'center',
+    color: "#666",
+    fontSize: 14,
+    fontWeight: "500",
+    paddingHorizontal: 4,
+    fontFamily: 'Cinzel-Regular',
+  },
+  todayButton: {
+    borderWidth: 1,
+    borderColor: '#999999',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  todayText: {
+    color: '#333',
+    fontWeight: '600',
+  },
+  pastDayButton: {
+    opacity: 0.8,
+  },
+  pastDayText: {
+    color: '#999999',
+  },
+  frequencyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  frequencyText: {
+    fontSize: 16,
+    color: "#666",
+    fontFamily: 'Cinzel',
+  },
+  frequencyValueContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: "auto",
+  },
+  frequencyValue: {
+    fontSize: 16,
+    color: "#666",
+    marginRight: 4,
+    fontFamily: 'Cinzel',
   },
   monthDayScrollView: {
     maxHeight: 160,
@@ -552,23 +1187,86 @@ const styles = StyleSheet.create({
   dayButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
-    margin: 3,
+    borderRadius: 20,
   },
   selectedDayButton: {
-    backgroundColor: "#000",
+    backgroundColor: "#333",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
   dayText: {
     color: "#666",
+    fontFamily: 'Cinzel-Regular',
   },
   selectedDayText: {
     color: "#fff",
+    fontFamily: 'Cinzel-Regular',
   },
-  saveButtonContainer: {
-    alignItems: "flex-end",
-    marginTop: 16,
+  saveButton: {
+    backgroundColor: "#000",
+    paddingVertical: 8,
+    paddingHorizontal: 36,
+    borderRadius: 16,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: 'Cinzel',
+  },
+  pickerContainer: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 16,
+    marginBottom: 16,
+    height: 150,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  pickerScrollView: {
+    height: '100%',
+    backgroundColor: '#f5f5f5',
+  },
+  pickerContentContainer: {
+    paddingVertical: 60,
+  },
+  pickerItem: {
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  selectedPickerItem: {
+    backgroundColor: '#e0e0e0',
+  },
+  pickerItemText: {
+    fontSize: 20,
+    color: '#666',
+    fontFamily: 'Cinzel',
+    textAlign: 'center',
+    width: '100%',
+  },
+  selectedPickerItemText: {
+    color: '#000',
+    fontWeight: '600',
+  },
+  pickerHighlight: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    transform: [{ translateY: -20 }],
+    pointerEvents: 'none',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#e0e0e0',
   },
 }) 

@@ -76,10 +76,10 @@ export default function TabNavigator() {
           tabBarShowLabel: true,
           tabBarLabelStyle: {
             ...theme.typography.body,
-            fontSize: 8,
-            lineHeight: 12,
+            fontSize: 12,
+            lineHeight: 16,
             marginBottom: Platform.OS === 'android' ? 0 : 2,
-            fontFamily: 'PressStart2P',
+            fontFamily: 'Cinzel',
           },
           tabBarActiveTintColor: theme.colors.primary,
           tabBarInactiveTintColor: theme.colors.inactive,

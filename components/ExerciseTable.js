@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     color: '#ffffff',
     fontSize: 11,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   exerciseTotal: {
     color: '#3b82f6',
     fontSize: 11,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   }
 });
 

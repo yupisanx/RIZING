@@ -53,7 +53,7 @@ export default function MenuScreen() {
                   <View style={[styles.colorDot, { backgroundColor: "#FBBF24" }]} />
                 </View>
               </View>
-              <Text style={styles.gridCardText}>My Self-Care Areas</Text>
+              <Text style={styles.gridCardText}>Self-Care Areas</Text>
             </TouchableOpacity>
 
             {/* My Goals */}
@@ -312,6 +312,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#ffffff",
     marginLeft: 12,
+    fontFamily: 'Cinzel',
   },
   selfCareIconContainer: {
     flexDirection: "column",
@@ -433,11 +434,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#ffffff",
+    fontFamily: 'Cinzel',
   },
   menuCardSubtitle: {
     fontSize: 12,
     color: "#9CA3AF",
     textTransform: "uppercase",
+    fontFamily: 'Cinzel',
   },
   sectionHeader: {
     fontSize: 12,
@@ -446,6 +449,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 4,
     textTransform: "uppercase",
+    fontFamily: 'Cinzel',
   },
   sectionCard: {
     backgroundColor: "rgba(26, 26, 26, 0.8)",
@@ -468,11 +472,13 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#ffffff",
     marginLeft: 12,
+    fontFamily: 'Cinzel',
   },
   menuItemSubtext: {
     fontSize: 14,
     color: "#9CA3AF",
     marginLeft: 12,
+    fontFamily: 'Cinzel',
   },
   separator: {
     height: 1,
@@ -515,6 +521,7 @@ const styles = StyleSheet.create({
   profileIconText: {
     fontSize: 14,
     color: "#60A5FA",
+    fontFamily: 'Cinzel',
   },
   helpIconBg: {
     width: 28,

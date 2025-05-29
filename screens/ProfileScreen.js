@@ -102,7 +102,7 @@ export default function ProfileScreen() {
 
       // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -433,6 +433,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 5,
+    fontFamily: 'Cinzel',
   },
   infoContainer: {
     marginTop: -10,
@@ -445,11 +446,13 @@ const styles = StyleSheet.create({
     color: '#E69138',
     fontWeight: '600',
     marginBottom: 2,
+    fontFamily: 'Cinzel',
   },
   infoValue: {
     fontSize: 13,
     color: '#FFFFFF',
     fontWeight: '500',
+    fontFamily: 'Cinzel',
   },
   unknownText: {
     color: '#999999',
@@ -523,12 +526,14 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: 16,
-    color: '#CCCCCC',
-    fontWeight: '600',
+    fontSize: 12,
+    color: '#8B8B8B',
+    fontFamily: 'Cinzel',
   },
   activeTabText: {
     color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontFamily: 'Cinzel',
   },
   streakCard: {
     backgroundColor: '#1F1F1F',
@@ -563,14 +568,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   streakCount: {
-    fontSize: 18,
+    fontSize: 16,
+    color: '#FFFFFF',
     fontWeight: 'bold',
-    color: '#333',
+    fontFamily: 'Cinzel',
   },
   streakSubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+    fontSize: 12,
+    color: '#8B8B8B',
+    fontFamily: 'Cinzel',
   },
   loadingText: {
     ...theme.typography.body,

@@ -11,6 +11,17 @@ const GenderAvatarScreen = ({ navigation }) => {
   const [selectedGender, setSelectedGender] = React.useState('male');
   const [isNavigating, setIsNavigating] = React.useState(false);
 
+  // Set initial gender when component mounts
+  useEffect(() => {
+    const initializeGender = async () => {
+      if (!onboardingData.gender) {
+        await updateOnboardingData('gender', 'male');
+        await updateOnboardingData('avatarId', 'male1');
+      }
+    };
+    initializeGender();
+  }, []);
+
   // Update selectedGender when onboardingData changes
   useEffect(() => {
     if (onboardingData && onboardingData.gender) {

@@ -105,15 +105,13 @@ export type SelfCareArea = {
 type NavigationProp = NativeStackNavigationProp<any>
 
 const selfCareAreas: SelfCareArea[] = [
-  { id: "calm", name: "Calm", color: "#86EFAC", emoji: "🧘" },
-  { id: "nutrition", name: "Nutrition", color: "#4ADE80", emoji: "🥗" },
-  { id: "productivity", name: "Productivity", color: "#FDE68A", emoji: "✅" },
-  { id: "movement", name: "Movement", color: "#FCD34D", emoji: "🏃" },
-  { id: "self-kindness", name: "Self-kindness", color: "#FB923C", emoji: "❤️" },
-  { id: "sleep", name: "Sleep", color: "#A855F7", emoji: "😴" },
-  { id: "gratitude", name: "Gratitude", color: "#F472B6", emoji: "🙏" },
-  { id: "hygiene", name: "Hygiene", color: "#60A5FA", emoji: "🧼" },
-  { id: "connection", name: "Connection", color: "#6366F1", emoji: "👥" },
+  { id: "calm_1", name: "Calm", color: "#86EFAC", emoji: "🧘" },
+  { id: "nutrition_2", name: "Nutrition", color: "#4ADE80", emoji: "🥗" },
+  { id: "productivity_3", name: "Productivity", color: "#FDE68A", emoji: "✅" },
+  { id: "movement_4", name: "Movement", color: "#FCD34D", emoji: "🏃" },
+  { id: "sleep_5", name: "Sleep", color: "#A855F7", emoji: "😴" },
+  { id: "gratitude_6", name: "Gratitude", color: "#F472B6", emoji: "🙏" },
+  { id: "connection_7", name: "Connection", color: "#6366F1", emoji: "👥" },
 ]
 
 // Memoized Components
@@ -157,9 +155,9 @@ const MainScreen = memo(({
         </View>
         {userAreas.length > 0 && (
           <View style={styles.areasGrid}>
-            {userAreas.map((area) => (
+            {userAreas.map((area, index) => (
               <TouchableOpacity
-                key={area.id}
+                key={`${area.id}_${index}`}
                 style={[styles.areaCard, { backgroundColor: area.color }]}
                 onPress={() => {
                   setSelectedArea(area)
@@ -205,8 +203,6 @@ const DetailScreen = memo(({
   setShowOptionsSheet: (show: boolean) => void
   setShowCalendarModal: (show: boolean) => void
 }) => {
-  const [activeTab, setActiveTab] = useState<'about' | 'personality'>('about');
-
   return (
     <SafeAreaView style={styles.detailContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
@@ -243,50 +239,18 @@ const DetailScreen = memo(({
             <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
           </TouchableOpacity>
 
-          {/* Tabs */}
-          <View style={styles.tabsContainer}>
-            <TouchableOpacity 
-              style={[styles.tab, activeTab === 'about' && styles.activeTab]} 
-              onPress={() => setActiveTab('about')}
-            >
-              <Text style={[styles.tabText, activeTab === 'about' && styles.activeTabText]}>ABOUT</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tab, activeTab === 'personality' && styles.activeTab]} 
-              onPress={() => setActiveTab('personality')}
-            >
-              <Text style={[styles.tabText, activeTab === 'personality' && styles.activeTabText]}>PERSONALITY</Text>
-            </TouchableOpacity>
+          <View style={styles.goalsSection}>
+            <Text style={styles.goalsSectionTitle}>Your goals</Text>
+            <View style={styles.emptyState}>
+              <View style={styles.emptyStateIcon}>
+                <Text style={styles.emptyStateEmoji}>🏖️</Text>
+              </View>
+              <Text style={styles.emptyStateText}>You don't have any goals yet</Text>
+              <TouchableOpacity style={styles.addGoalButton} activeOpacity={0.8}>
+                <Text style={styles.addGoalButtonText}>Add a new goal</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {/* Tab Content */}
-          {activeTab === 'about' ? (
-            <View style={styles.goalsSection}>
-              <Text style={styles.goalsSectionTitle}>Your goals</Text>
-              <View style={styles.emptyState}>
-                <View style={styles.emptyStateIcon}>
-                  <Text style={styles.emptyStateEmoji}>🏖️</Text>
-                </View>
-                <Text style={styles.emptyStateText}>You don't have any goals yet</Text>
-                <TouchableOpacity style={styles.addGoalButton} activeOpacity={0.8}>
-                  <Text style={styles.addGoalButtonText}>Add a new goal</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.personalitySection}>
-              <Text style={styles.personalitySectionTitle}>Your personality traits</Text>
-              <View style={styles.emptyState}>
-                <View style={styles.emptyStateIcon}>
-                  <Text style={styles.emptyStateEmoji}>🎭</Text>
-                </View>
-                <Text style={styles.emptyStateText}>No personality traits added yet</Text>
-                <TouchableOpacity style={styles.addTraitButton} activeOpacity={0.8}>
-                  <Text style={styles.addTraitButtonText}>Add personality traits</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -315,9 +279,9 @@ const AreaSelectionModal = memo(({
         </View>
         <ScrollView style={styles.modalContentMain} showsVerticalScrollIndicator={false}>
           <View style={styles.areasSelectionGrid}>
-            {selfCareAreas.map((area) => (
+            {selfCareAreas.map((area, index) => (
               <TouchableOpacity
-                key={area.id}
+                key={`selection_${area.id}_${index}`}
                 style={[styles.selectionAreaCard, { backgroundColor: area.color }]}
                 onPress={() => handleSelectPredefinedArea(area)}
                 activeOpacity={0.8}
@@ -366,10 +330,10 @@ const NewAreaModal = memo(({
     <View style={styles.modalOverlay}>
       <View style={styles.newAreaModalContainer}>
         <View style={styles.newAreaModalHeader}>
-          <TouchableOpacity onPress={() => setShowNewAreaModal(false)} style={styles.modalCloseButton}>
+          <TouchableOpacity onPress={() => setShowNewAreaModal(false)} style={styles.absoluteCloseButton}>
             <Ionicons name="close" size={24} color="#6B7280" />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Create a new area</Text>
+          <Text style={styles.centeredModalTitle}>Create a new area</Text>
         </View>
         <View style={styles.newAreaModalContent}>
           <TextInput
@@ -396,34 +360,116 @@ const NewAreaModal = memo(({
 
 const HabitTrackerMobile = memo(({ 
   showCalendarModal, 
-  setShowCalendarModal 
+  setShowCalendarModal,
+  isFromSeeAll = false
 }: { 
   showCalendarModal: boolean
   setShowCalendarModal: (show: boolean) => void
+  isFromSeeAll?: boolean
 }) => {
-  const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
-  const today = 25;
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const renderCalendarDay = (day: number) => (
-    <View key={day} style={styles.calendarDay}>
-      <View
-        style={[
-          styles.dayNumber,
-          day === today && styles.todayNumber,
-        ]}
-      >
-        <Text
-          style={[
-            styles.dayText,
-            day === today ? styles.todayText : styles.inactiveText,
-          ]}
-        >
-          {day}
-        </Text>
-      </View>
-      <View style={styles.dayIndicator} />
-    </View>
-  );
+  // Reset to current month when modal opens
+  useEffect(() => {
+    if (showCalendarModal) {
+      setCurrentMonth(new Date());
+    }
+  }, [showCalendarModal]);
+
+  const daysInMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth() + 1,
+    0
+  ).getDate();
+
+  const firstDayOfMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth(),
+    1
+  ).getDay();
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const weekDays = [
+    { key: 'sun', label: 'S' },
+    { key: 'mon', label: 'M' },
+    { key: 'tue', label: 'T' },
+    { key: 'wed', label: 'W' },
+    { key: 'thu', label: 'T' },
+    { key: 'fri', label: 'F' },
+    { key: 'sat', label: 'S' }
+  ];
+
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
+  };
+
+  const isSelected = (date: Date) => {
+    return date.getDate() === selectedDate.getDate() &&
+      date.getMonth() === selectedDate.getMonth() &&
+      date.getFullYear() === selectedDate.getFullYear();
+  };
+
+  const changeMonth = (increment: number) => {
+    setCurrentMonth(new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + increment,
+      1
+    ));
+  };
+
+  const renderCalendarDays = () => {
+    const days = [];
+    const totalDays = firstDayOfMonth + daysInMonth;
+    const rows = Math.ceil(totalDays / 7);
+
+    for (let row = 0; row < rows; row++) {
+      const week = [];
+      for (let col = 0; col < 7; col++) {
+        const dayIndex = row * 7 + col;
+        const dayNumber = dayIndex - firstDayOfMonth + 1;
+
+        if (dayIndex < firstDayOfMonth || dayNumber > daysInMonth) {
+          week.push(<View key={`empty-${dayIndex}`} style={styles.calendarDay} />);
+        } else {
+          const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dayNumber);
+          week.push(
+            <TouchableOpacity
+              key={dayNumber}
+              style={[
+                styles.calendarDay,
+                isSelected(date) && styles.selectedDay,
+                isToday(date) && styles.todayDay
+              ]}
+              onPress={() => setSelectedDate(date)}
+            >
+              <Text style={[
+                styles.calendarDayText,
+                isSelected(date) && styles.selectedDayText,
+                isToday(date) && styles.todayDayText
+              ]}>
+                {dayNumber}
+              </Text>
+              <View style={styles.activityDot} />
+            </TouchableOpacity>
+          );
+        }
+      }
+      days.push(
+        <View key={`week-${row}`} style={styles.calendarWeek}>
+          {week}
+        </View>
+      );
+    }
+    return days;
+  };
 
   return (
     <Modal 
@@ -436,71 +482,70 @@ const HabitTrackerMobile = memo(({
           <View style={styles.modalContent}>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
               <View style={styles.content}>
-                {/* Header */}
+                {/* Header with Month/Year */}
                 <View style={styles.header}>
-                  <TouchableOpacity style={styles.navButton} onPress={() => setShowCalendarModal(false)}>
-                    <Text style={styles.navIcon}>✕</Text>
+                  <TouchableOpacity 
+                    style={styles.closeBtn} 
+                    onPress={() => setShowCalendarModal(false)}
+                  >
+                    <Ionicons name="close" size={24} color="#9CA3AF" />
                   </TouchableOpacity>
-                  <Text style={styles.headerTitle}>May 2025</Text>
-                  <TouchableOpacity style={styles.navButton}>
-                    <Text style={styles.navIcon}>›</Text>
-                  </TouchableOpacity>
+                  <Text style={styles.monthYearText}>
+                    {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                  </Text>
+                  <View style={styles.monthControls}>
+                    <TouchableOpacity onPress={() => changeMonth(1)}>
+                      <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Stats Cards */}
                 <View style={styles.statsContainer}>
                   <View style={styles.statCard}>
-                    <View style={[styles.statIcon, styles.yellowIcon]}>
-                      <View style={styles.iconContainer}>
-                        <Text style={styles.iconText}>✓</Text>
-                      </View>
+                    <View style={[styles.statIcon, styles.greenIcon]}>
+                      <Ionicons name="checkmark" size={20} color="white" />
                     </View>
                     <View style={styles.statContent}>
                       <Text style={styles.statNumber}>0</Text>
-                      <Text style={styles.statLabel}>days active</Text>
+                      <Text style={styles.statLabel}>day active</Text>
                     </View>
                   </View>
 
                   <View style={styles.statCard}>
                     <View style={[styles.statIcon, styles.orangeIcon]}>
-                      <View style={styles.iconContainer}>
-                        <Text style={styles.iconText}>📁</Text>
-                      </View>
+                      <Ionicons name="document-text" size={20} color="white" />
                     </View>
                     <View style={styles.statContent}>
                       <Text style={styles.statNumber}>0</Text>
-                      <Text style={styles.statLabel}>goals done</Text>
+                      <Text style={styles.statLabel}>goal done</Text>
                     </View>
                   </View>
                 </View>
 
-                {/* Calendar Grid */}
-                <View style={styles.calendarGrid}>
-                  {daysInMonth.map(renderCalendarDay)}
+                {/* Calendar */}
+                <View style={styles.calendar}>
+                  {!isFromSeeAll && (
+                    <View style={styles.weekDaysRow}>
+                      {weekDays.map(day => (
+                        <Text key={day.key} style={styles.weekDayText}>{day.label}</Text>
+                      ))}
+                    </View>
+                  )}
+                  {renderCalendarDays()}
                 </View>
 
-                {/* Today Section */}
+                {/* Today's Goals Section */}
                 <View style={styles.todaySection}>
-                  <Text style={styles.todayHeader}>TODAY, MAY 25</Text>
+                  <Text style={styles.todayHeader}>
+                    {isToday(selectedDate) 
+                      ? "TODAY, " + monthNames[selectedDate.getMonth()].toUpperCase() + " " + selectedDate.getDate()
+                      : monthNames[selectedDate.getMonth()].toUpperCase() + " " + selectedDate.getDate()
+                    }
+                  </Text>
 
-                  <View style={styles.goalCard}>
-                    <View style={[styles.goalIcon, styles.yellowIcon]}>
-                      <View style={styles.iconContainer}>
-                        <Text style={styles.iconText}>⭐</Text>
-                      </View>
-                    </View>
-                    <View style={styles.goalContent}>
-                      <Text style={styles.goalTitle}>
-                        Write down my goals for tomorrow
-                      </Text>
-                      <View style={styles.goalMeta}>
-                        <Text style={styles.smallIcon}>↻</Text>
-                        <Text style={styles.goalFrequency}>daily</Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity style={styles.moreButton}>
-                      <Text style={styles.navIcon}>⋯</Text>
-                    </TouchableOpacity>
+                  <View style={styles.noGoalsContainer}>
+                    <Text style={styles.noGoalsText}>No goals for this day</Text>
                   </View>
                 </View>
               </View>
@@ -610,8 +655,11 @@ export default function SelfCareAreaScreen() {
   }, [loadUserData, loadAreas])
 
   const handleSelectPredefinedArea = useCallback((area: SelfCareArea) => {
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(7);
     const newArea: SelfCareArea = {
       ...area,
+      id: `area_${timestamp}_${randomString}`,  // Completely new unique ID
       isCustom: false
     }
     const updatedAreas: SelfCareArea[] = [...userAreas, newArea]
@@ -700,6 +748,7 @@ export default function SelfCareAreaScreen() {
       <HabitTrackerMobile 
         showCalendarModal={showCalendarModal}
         setShowCalendarModal={setShowCalendarModal}
+        isFromSeeAll={true}
       />
       <OptionsSheet 
         showOptionsSheet={showOptionsSheet}
@@ -728,7 +777,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#000000",
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 70,
   },
   closeButton: {
     position: "absolute",
@@ -752,6 +801,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
     textAlign: "center",
+    fontFamily: 'Cinzel',
   },
   speechTail: {
     position: "absolute",
@@ -793,12 +843,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#374151",
     marginBottom: 8,
+    fontFamily: 'Cinzel',
   },
   subtitle: {
     fontSize: 16,
     color: "#6B7280",
     textAlign: "center",
     lineHeight: 24,
+    fontFamily: 'Cinzel',
   },
   areasGrid: {
     flexDirection: "row",
@@ -825,6 +877,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "white",
     textAlign: "center",
+    fontFamily: 'Cinzel',
   },
   newAreaButton: {
     flexDirection: "row",
@@ -843,6 +896,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#6B7280",
     marginLeft: 8,
+    fontFamily: 'Cinzel',
   },
   feedbackCard: {
     backgroundColor: "white",
@@ -869,11 +923,13 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     letterSpacing: 1,
     marginBottom: 2,
+    fontFamily: 'Cinzel',
   },
   feedbackTitle: {
     fontSize: 16,
     fontWeight: "500",
     color: "#374151",
+    fontFamily: 'Cinzel',
   },
   bottomSpacer: {
     height: Platform.OS === 'android' ? 24 : 32,
@@ -902,6 +958,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
     flex: 1,
+    fontFamily: 'Cinzel',
   },
   modalContentMain: {
     flex: 1,
@@ -910,12 +967,12 @@ const styles = StyleSheet.create({
   areasSelectionGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     paddingHorizontal: 16,
     gap: 16,
   },
   selectionAreaCard: {
-    width: ((width - 48) / 2) / 1.2,
+    width: (width - 48) / 2,
     aspectRatio: 1,
     borderRadius: 24,
     marginBottom: 16,
@@ -936,6 +993,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "white",
     textAlign: "center",
+    fontFamily: 'Cinzel',
   },
   orContainer: {
     alignItems: "center",
@@ -945,6 +1003,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#6B7280",
+    fontFamily: 'Cinzel',
   },
   createCustomButton: {
     flexDirection: "row",
@@ -952,16 +1011,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#D1D5DB",
-    borderStyle: "dashed",
+    borderStyle: "solid",
     borderRadius: 16,
-    paddingVertical: 20,
+    paddingVertical: 24,
     marginBottom: 48,
+    minHeight: 72,
   },
   createCustomButtonText: {
     fontSize: 16,
     fontWeight: "500",
     color: "#6B7280",
     marginLeft: 8,
+    flexShrink: 1,
+    textAlign: "center",
+    fontFamily: 'Cinzel',
   },
   input: {
     borderWidth: 2,
@@ -982,6 +1045,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "white",
+    fontFamily: 'Cinzel',
   },
   detailContainer: {
     flex: 1,
@@ -1029,6 +1093,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "white",
+    fontFamily: 'Cinzel',
   },
   detailContentSection: {
     flex: 1,
@@ -1061,10 +1126,12 @@ const styles = StyleSheet.create({
   dayText: {
     fontSize: 14,
     color: "#9CA3AF",
+    fontFamily: 'Cinzel',
   },
   activeDayText: {
     color: "white",
     fontWeight: "600",
+    fontFamily: 'Cinzel',
   },
   dayProgress: {
     width: 32,
@@ -1082,6 +1149,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6B7280",
     marginRight: 4,
+    fontFamily: 'Cinzel',
   },
   goalsSection: {
     marginBottom: 32,
@@ -1091,6 +1159,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
     marginBottom: 24,
+    fontFamily: 'Cinzel',
   },
   emptyState: {
     alignItems: "center",
@@ -1112,6 +1181,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6B7280",
     marginBottom: 24,
+    fontFamily: 'Cinzel',
   },
   addGoalButton: {
     backgroundColor: "#10B981",
@@ -1126,6 +1196,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "white",
+    fontFamily: 'Cinzel',
   },
   addExistingButton: {
     flexDirection: "row",
@@ -1137,6 +1208,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6B7280",
     marginLeft: 8,
+    fontFamily: 'Cinzel',
   },
   optionsOverlay: {
     flex: 1,
@@ -1159,6 +1231,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#374151",
+    fontFamily: 'Cinzel',
   },
   optionButton: {
     flexDirection: "row",
@@ -1171,6 +1244,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#374151",
     marginLeft: 12,
+    fontFamily: 'Cinzel',
   },
   loadingContainer: {
     flex: 1,
@@ -1190,6 +1264,7 @@ const styles = StyleSheet.create({
     color: theme.colors.error,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
+    fontFamily: 'Cinzel',
   },
   retryButton: {
     backgroundColor: theme.colors.primary,
@@ -1201,11 +1276,12 @@ const styles = StyleSheet.create({
     color: theme.colors.background,
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Cinzel',
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
@@ -1218,12 +1294,12 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    paddingTop: 16,
   },
   content: {
     flex: 1,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingHorizontal: 20,
     paddingBottom: 24,
   },
   scrollView: {
@@ -1234,178 +1310,167 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+    paddingHorizontal: 4,
   },
-  navButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+  closeBtn: {
+    padding: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+  },
+  monthYearText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#374151',
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: 'Cinzel',
+  },
+  monthControls: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  navIcon: {
-    fontSize: 18,
-    color: '#9ca3af',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#6b7280',
+    gap: 16,
+    paddingRight: 8,
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 32,
+    gap: 12,
+    marginBottom: 24,
+    paddingHorizontal: 4,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  yellowIcon: {
-    backgroundColor: '#fbbf24',
+  greenIcon: {
+    backgroundColor: '#10b981',
   },
   orangeIcon: {
-    backgroundColor: '#fb923c',
+    backgroundColor: '#f59e0b',
   },
-  iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  statsLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 16,
+    marginTop: -5,
+    position: 'relative',
+    zIndex: 1,
   },
   statContent: {
     flex: 1,
+    alignItems: 'flex-start',
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
     marginBottom: 2,
+    alignSelf: 'flex-start',
+    fontFamily: 'Cinzel',
   },
   statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    marginBottom: 32,
-    justifyContent: 'space-between',
-  },
-  calendarDay: {
-    width: (width - 48 - 96) / 7,
-    alignItems: 'center',
-    gap: 8,
-  },
-  dayNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  todayNumber: {
-    backgroundColor: '#fef3c7',
-  },
-  todayText: {
-    color: '#111827',
-  },
-  inactiveText: {
-    color: '#9ca3af',
-  },
-  dayIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#d1d5db',
-  },
-  todaySection: {
-    marginBottom: 24,
-  },
-  todayHeader: {
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6b7280',
-    letterSpacing: 1,
-    marginBottom: 16,
-  },
-  goalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  goalIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  goalContent: {
-    flex: 1,
-  },
-  goalTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  goalMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  smallIcon: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  goalFrequency: {
     fontSize: 14,
     color: '#6b7280',
+    marginTop: -5,
+    alignSelf: 'flex-start',
+    fontFamily: 'Cinzel',
   },
-  moreButton: {
-    width: 32,
-    height: 32,
+  calendar: {
+    flex: 1,
+    paddingHorizontal: 4,
+  },
+  weekDaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  weekDayText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+    width: 40,
+    textAlign: 'center',
+    fontFamily: 'Cinzel',
+  },
+  calendarWeek: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  calendarDay: {
+    width: 40,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 8,
   },
-  bottomIndicator: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+  selectedDay: {
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
   },
-  homeIndicator: {
-    width: 128,
-    height: 4,
+  todayDay: {
+    backgroundColor: '#e5f7ed',
+  },
+  calendarDayText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginBottom: 6,
+    fontFamily: 'Cinzel',
+  },
+  selectedDayText: {
+    color: '#374151',
+    fontWeight: '500',
+  },
+  todayDayText: {
+    color: '#10b981',
+    fontWeight: '500',
+  },
+  activityDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#E5E7EB',
-    borderRadius: 2,
+  },
+  todaySection: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  todayHeader: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6b7280',
+    letterSpacing: 0.5,
+    marginBottom: 24,
+    fontFamily: 'Cinzel',
+  },
+  noGoalsContainer: {
+    alignItems: 'center',
+    padding: 24,
+  },
+  noGoalsText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    fontFamily: 'Cinzel',
   },
   newAreaModalContainer: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: height * 0.9,
-    width: '100%',
+    borderRadius: 24,
+    width: '95%',
+    alignSelf: 'center',
     overflow: 'hidden',
   },
   newAreaModalHeader: {
@@ -1417,9 +1482,8 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F3F4F6",
   },
   newAreaModalContent: {
-    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingVertical: 24,
   },
   newAreaInput: {
     borderWidth: 2,
@@ -1430,50 +1494,21 @@ const styles = StyleSheet.create({
     color: "#374151",
     marginBottom: 16,
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-    marginBottom: 24,
-    paddingHorizontal: 16,
+  absoluteCloseButton: {
+    position: 'absolute',
+    left: 20,
+    top: '50%',
+    transform: [{ translateY: -2 }],
+    zIndex: 2,
+    padding: 4,
   },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-    marginHorizontal: 8,
-  },
-  activeTab: {
-    backgroundColor: '#60A5FA',
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  activeTabText: {
-    color: '#FFFFFF',
-  },
-  personalitySection: {
-    paddingHorizontal: 16,
-  },
-  personalitySectionTitle: {
+  centeredModalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 16,
-  },
-  addTraitButton: {
-    backgroundColor: '#60A5FA',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-    marginTop: 16,
-  },
-  addTraitButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#374151",
     textAlign: 'center',
+    flex: 1,
+    fontFamily: 'Cinzel',
+    marginTop: -3,
   },
 }) 

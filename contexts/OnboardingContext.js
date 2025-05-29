@@ -3,35 +3,61 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const OnboardingContext = createContext();
 
+export const useOnboarding = () => {
+  const context = useContext(OnboardingContext);
+  if (!context) {
+    throw new Error('useOnboarding must be used within an OnboardingProvider');
+  }
+  return context;
+};
+
 export const OnboardingProvider = ({ children }) => {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [onboardingData, setOnboardingData] = useState({});
 
   useEffect(() => {
-    checkOnboardingStatus();
+    loadOnboardingData();
   }, []);
 
-  const checkOnboardingStatus = async () => {
+  const loadOnboardingData = async () => {
     try {
-      const onboardingData = await AsyncStorage.getItem('@onboarding_data');
-      if (onboardingData) {
-        const { hasCompletedOnboarding: completed } = JSON.parse(onboardingData);
-        setHasCompletedOnboarding(completed);
+      const data = await AsyncStorage.getItem('@onboarding_data');
+      if (data) {
+        const parsedData = JSON.parse(data);
+        setOnboardingData(parsedData);
+        setHasCompletedOnboarding(parsedData.hasCompletedOnboarding || false);
       }
     } catch (error) {
-      console.error('Error checking onboarding status:', error);
+      console.error('Error loading onboarding data:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const updateOnboardingData = async (key, value) => {
+    try {
+      const newData = {
+        ...onboardingData,
+        [key]: value
+      };
+      setOnboardingData(newData);
+      await AsyncStorage.setItem('@onboarding_data', JSON.stringify(newData));
+    } catch (error) {
+      console.error('Error updating onboarding data:', error);
+      throw error;
+    }
+  };
+
   const completeOnboarding = async (userData) => {
     try {
-      const onboardingData = {
+      const newData = {
+        ...onboardingData,
         ...userData,
         hasCompletedOnboarding: true
       };
-      await AsyncStorage.setItem('@onboarding_data', JSON.stringify(onboardingData));
+      await AsyncStorage.setItem('@onboarding_data', JSON.stringify(newData));
+      setOnboardingData(newData);
       setHasCompletedOnboarding(true);
     } catch (error) {
       console.error('Error completing onboarding:', error);
@@ -44,18 +70,12 @@ export const OnboardingProvider = ({ children }) => {
       value={{
         hasCompletedOnboarding,
         loading,
+        onboardingData,
+        updateOnboardingData,
         completeOnboarding,
       }}
     >
       {children}
     </OnboardingContext.Provider>
   );
-};
-
-export const useOnboarding = () => {
-  const context = useContext(OnboardingContext);
-  if (!context) {
-    throw new Error('useOnboarding must be used within an OnboardingProvider');
-  }
-  return context;
 }; 

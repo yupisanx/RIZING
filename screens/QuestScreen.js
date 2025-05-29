@@ -181,12 +181,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     marginTop: 20,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   errorText: {
     color: 'red',
     textAlign: 'center',
     marginTop: 20,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
 }); 

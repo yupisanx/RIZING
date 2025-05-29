@@ -41,7 +41,7 @@ export default function HomeScreen() {
     async function loadFonts() {
       try {
         await Font.loadAsync({
-          'PressStart2P': require('../assets/fonts/PressStart2P-Regular.ttf'),
+          'Cinzel': require('../assets/fonts/Cinzel-VariableFont_wght.ttf'),
         });
         setFontsLoaded(true);
       } catch (error) {
@@ -157,10 +157,19 @@ export default function HomeScreen() {
                 </View>
               </View>
               <View style={styles.headerRightCol}>
-                <Text style={[styles.title, { marginBottom: 10, fontSize: 12 }]}>Daily Quest</Text>
+                <Text style={[styles.title, { marginBottom: 10, fontSize: 16 }]}>Daily Quest</Text>
                 <View style={[styles.progressContainer, { marginTop: 5 }]}>
                   <View style={[styles.progressBackground, { width: '98%', alignSelf: 'flex-start', marginLeft: 0 }]}> 
-                    <View style={[styles.progressFill, { width: `${(energy / maxEnergy) * 100}%` }]} />
+                    <View style={[
+                      styles.progressFill, 
+                      { 
+                        width: `${(energy / maxEnergy) * 98}%`,
+                        height: '70%',
+                        top: '15%',
+                        borderRadius: 10,
+                        left: '1%'
+                      }
+                    ]} />
                     <Text style={styles.progressText}>
                       {energy} / {maxEnergy}
                     </Text>
@@ -179,9 +188,9 @@ export default function HomeScreen() {
                   <TouchableOpacity onPress={() => setEditGoalId(goal.id)} style={styles.threeDotButton}>
                     <MaterialIcons name="more-vert" size={24} color="#fff" />
                   </TouchableOpacity>
-                  <Text style={[styles.goalTitle, { fontFamily: 'PressStart2P' }]}>{goal.title}</Text>
+                  <Text style={[styles.goalTitle, { fontFamily: 'Cinzel' }]}>{goal.title}</Text>
                   <View style={styles.goalRight}>
-                    <Text style={[styles.energyValue, { fontFamily: 'PressStart2P' }]}>5⚡</Text>
+                    <Text style={[styles.energyValue, { fontFamily: 'Cinzel' }]}>5⚡</Text>
                     <ThreeDButton
                       onPress={() => toggleGoalCompletion(goal.id)}
                       completed={goal.completed}
@@ -228,7 +237,7 @@ export default function HomeScreen() {
           {isAddingGoal ? (
             <View style={styles.addGoalContainer}>
               <TextInput
-                style={[styles.input, { fontFamily: 'PressStart2P' }]}
+                style={[styles.input, { fontFamily: 'Cinzel' }]}
                 value={newGoalTitle}
                 onChangeText={setNewGoalTitle}
                 placeholder="Enter goal title"
@@ -236,7 +245,7 @@ export default function HomeScreen() {
                 onSubmitEditing={addGoal}
               />
               <TouchableOpacity style={styles.addButton} onPress={addGoal}>
-                <Text style={[styles.addButtonText, { fontFamily: 'PressStart2P' }]}>Add</Text>
+                <Text style={[styles.addButtonText, { fontFamily: 'Cinzel' }]}>Add</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -247,7 +256,7 @@ export default function HomeScreen() {
               >
                 <View style={styles.addGoalContent}>
                   <MaterialIcons name="add" size={24} color="white" />
-                  <Text style={[styles.addGoalText, { fontFamily: 'PressStart2P' }]}>Add a goal</Text>
+                  <Text style={[styles.addGoalText, { fontFamily: 'Cinzel' }]}>Add a goal</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -287,7 +296,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -672,50 +681,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#60a5fa',
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   title: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   progressContainer: {
     marginBottom: 12,
   },
   progressBackground: {
-    backgroundColor: 'rgba(42, 42, 42, 0.8)',
+    backgroundColor: '#E5E7EB',
     borderRadius: 16,
-    height: 18,
+    height: Platform.OS === 'android' ? 22 : 18,
     justifyContent: 'center',
     overflow: 'hidden',
     width: '80%',
-    borderWidth: 1,
-    borderColor: '#ffffff',
   },
   progressFill: {
     position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
     backgroundColor: '#60a5fa',
   },
   progressText: {
     textAlign: 'center',
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 10,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   subtitle: {
     color: '#ffffff',
     textAlign: 'center',
     fontSize: 10,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   bold: {
     fontWeight: 'bold',
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   goalsLeft: {
     color: '#ffffff',
@@ -725,7 +729,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginLeft: 0,
     alignSelf: 'center',
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   goalsList: {
     width: '90%',
@@ -751,22 +755,22 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   goalTitle: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
     flex: 1,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   goalRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   energyValue: {
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#60a5fa',
     marginRight: 12,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   addGoalContainer: {
     flexDirection: 'row',
@@ -781,7 +785,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginRight: 8,
     color: '#ffffff',
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   addButton: {
     backgroundColor: '#2A2A2A',
@@ -794,7 +798,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 10,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   addGoalButtonContainer: {
     width: '100%',
@@ -819,10 +823,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     marginLeft: 8,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   placeholderText: {
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
   },
   avatarContainer: {
     width: '100%',
@@ -873,6 +877,7 @@ const styles = StyleSheet.create({
     color: '#FBBF24',
     fontWeight: 'bold',
     marginLeft: 6,
+    fontFamily: 'Cinzel',
   },
   editModalCard: {
     backgroundColor: '#fff',
@@ -889,10 +894,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
     marginBottom: 8,
+    fontFamily: 'Cinzel',
   },
   editModalGoalSub: {
     color: '#666',
     fontSize: 14,
+    fontFamily: 'Cinzel',
   },
   editModalActionsRow: {
     flexDirection: 'row',
@@ -908,6 +915,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 4,
     fontSize: 14,
+    fontFamily: 'Cinzel',
   },
   editModalClose: {
     marginTop: 12,

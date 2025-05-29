@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   messageText: {
     color: '#ffffff',
     fontSize: 16,
-    fontFamily: 'PressStart2P',
+    fontFamily: 'Cinzel',
     marginLeft: 10,
   },
   topBorderLine: {
