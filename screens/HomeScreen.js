@@ -6,12 +6,13 @@ import { Icons } from '../components/Icons';
 import MessageModal from '../components/MessageModal';
 import { MaterialIcons } from "@expo/vector-icons";
 import Icon from "react-native-vector-icons/Feather";
-import MaterialIcon from "react-native-vector-icons/MaterialCommunityIcons";
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Font from 'expo-font';
 import { useNavigation } from '@react-navigation/native';
 import ThreeDButton from '../components/ThreeDButton';
 import { db } from '../config/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, serverTimestamp, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { BlurView } from 'expo-blur';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_HEIGHT = 40;
@@ -52,7 +53,10 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!user) return;
     setLoadingGoals(true);
-    const q = query(collection(db, 'users', user.uid, 'goals'));
+    const q = query(
+      collection(db, 'users', user.uid, 'goals'),
+      orderBy('createdAt', 'desc')
+    );
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedGoals = [];
       querySnapshot.forEach((doc) => {
@@ -90,8 +94,9 @@ export default function HomeScreen() {
         id: Date.now().toString(),
         title: newGoalTitle.trim(),
         completed: false,
+        createdAt: serverTimestamp(),
       };
-      setGoals([...goals, newGoal]);
+      setGoals([newGoal, ...goals]);
       setNewGoalTitle("");
       setIsAddingGoal(false);
       setTimeout(() => {
@@ -115,6 +120,82 @@ export default function HomeScreen() {
   const handleScroll = (event) => {
     const offsetY = event.nativeEvent.contentOffset.y;
     scrollY.setValue(offsetY);
+  };
+
+  // Parse 'YYYY-MM-DD' as local time
+  function parseLocalDate(dateStr) {
+    if (!dateStr) return new Date();
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (!year || !month || !day) return new Date(dateStr); // fallback
+    return new Date(year, month - 1, day);
+  }
+
+  // Helper to check if two dates are the same day
+  function isSameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  // Filtering logic for goals
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayDay = today.getDay();
+  const todayDate = today.getDate();
+  const todayWeekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][todayDay];
+
+  const filteredGoals = goals.filter(goal => {
+    const goalDate = parseLocalDate(goal.date);
+    const repeat = goal.repeatOption || "Does not repeat";
+    // Only show if today is the start date or after
+    if (today < goalDate) return false;
+    if (repeat === "Does not repeat") {
+      return isSameDay(today, goalDate);
+    }
+    // For all repeat options, only show if today is the start date or after
+    if (today < goalDate) return false;
+    if (repeat === "Every day") {
+      return isSameDay(today, goalDate) || today > goalDate;
+    }
+    if (repeat === "Every weekday") {
+      return (isSameDay(today, goalDate) || today > goalDate) && todayDay >= 1 && todayDay <= 5;
+    }
+    if (repeat.startsWith("Every week on ")) {
+      const dayStr = repeat.replace("Every week on ", "");
+      return (isSameDay(today, goalDate) || today > goalDate) && todayWeekday === dayStr;
+    }
+    if (repeat.startsWith("Every month on the ")) {
+      // e.g. 'Every month on the 5th'
+      const match = repeat.match(/Every month on the (\d+)(st|nd|rd|th)/);
+      if (match) {
+        const dayNum = parseInt(match[1], 10);
+        return (isSameDay(today, goalDate) || today > goalDate) && todayDate === dayNum;
+      }
+    }
+    // fallback: show only on start date
+    return isSameDay(today, goalDate);
+  });
+
+  // Delete goal with confirmation
+  const deleteGoal = (goalId) => {
+    Alert.alert(
+      'Delete Goal',
+      'Are you sure you want to delete this goal?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, 'users', user.uid, 'goals', goalId));
+              setEditGoalId(null);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete goal.');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -195,98 +276,105 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
-        <Text style={styles.goalsLeft}>
-          {goals.length - goals.filter((goal) => goal.completed).length} goals left for today!
-        </Text>
-        <View style={[styles.mainContent, { minHeight: height * 0.8, paddingTop: 0 }]}>
-          <View style={styles.goalsList}>
-            {loadingGoals ? (
-              <Text style={{ color: '#fff', textAlign: 'center', marginVertical: 20 }}>Loading goals...</Text>
-            ) : goals.length === 0 ? (
-              <Text style={{ color: '#fff', textAlign: 'center', marginVertical: 20 }}>No goals yet.</Text>
-            ) : (
-              goals.map((goal) => (
-                <View key={goal.id} style={styles.goalCard}>
-                  <View style={styles.goalContent}>
-                    <TouchableOpacity onPress={() => setEditGoalId(goal.id)} style={styles.threeDotButton}>
-                      <MaterialIcons name="more-vert" size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.goalTitle, { fontFamily: 'Cinzel', marginTop: 10 }]}>{goal.text || goal.title}</Text>
-                    </View>
-                    <View style={styles.goalRight}>
-                      <Text style={[styles.energyValue, { fontFamily: 'Cinzel' }]}>5⚡</Text>
-                      <ThreeDButton
-                        onPress={() => toggleGoalCompletion(goal.id)}
-                        completed={goal.completed}
-                        size={42}
-                      />
+        <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'center', justifyContent: 'space-between', width: '90%' }}>
+          <Text style={styles.goalsLeft}>
+            {filteredGoals.length - filteredGoals.filter((goal) => goal.completed).length} goals left for today!
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SelfCareArea')}>
+            <MaterialCommunityIcons name="view-grid-plus" size={22} color="#fff" style={{ marginTop: 30 }} />
+          </TouchableOpacity>
+        </View>
+        <View style={[styles.goalsList, { marginTop: 20 }]}>
+          {loadingGoals ? (
+            <Text style={{ color: '#fff', textAlign: 'center', marginVertical: 20 }}>Loading goals...</Text>
+          ) : filteredGoals.length === 0 ? (
+            null
+          ) : (
+            filteredGoals.map((goal) => (
+              <View key={goal.id} style={styles.goalCard}>
+                <View style={styles.goalContent}>
+                  <TouchableOpacity onPress={() => setEditGoalId(goal.id)} style={styles.threeDotButton}>
+                    <MaterialIcons name="more-vert" size={24} color="#fff" />
+                  </TouchableOpacity>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.goalTitle, { fontFamily: 'Cinzel', marginTop: 10 }]}>{goal.text || goal.title}</Text>
+                  </View>
+                  <View style={styles.goalRight}>
+                    <Text style={[styles.energyValue, { fontFamily: 'Cinzel' }]}>5⚡</Text>
+                    <ThreeDButton
+                      onPress={() => toggleGoalCompletion(goal.id)}
+                      completed={goal.completed}
+                      size={42}
+                    />
+                  </View>
+                </View>
+                <Modal
+                  visible={editGoalId === goal.id}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setEditGoalId(null)}
+                >
+                  <View style={styles.editModalOverlay}>
+                    <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.85)' }} />
+                    <View style={styles.editModalContent}>
+                      <TouchableOpacity style={{ position: 'absolute', top: 26, left: 26, zIndex: 10 }} onPress={() => deleteGoal(goal.id)}>
+                        <MaterialIcons name="delete" size={28} color="#F87171" />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.editModalEditButton, { alignSelf: 'flex-end', marginRight: 0 }]}>
+                        <MaterialIcons name="edit" size={30} color="#FBBF24" />
+                        <Text style={styles.editModalEditText}>Edit</Text>
+                      </TouchableOpacity>
+                      <View style={styles.editModalCard}>
+                        <Text style={[styles.editModalGoalTitle, { textAlign: 'center' }]}>{goal.text || goal.title}</Text>
+                      </View>
+                      <View style={styles.editModalActionsRow}>
+                        <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialCommunityIcons name="skip-forward" size={32} color="#a78bfa" /><Text style={styles.editModalActionText}>Skip</Text></TouchableOpacity>
+                        <TouchableOpacity style={styles.editModalAction}>
+                          <View style={styles.editModalActionIconBg}>
+                            <MaterialIcons name="check" size={42} color="#22C55E" />
+                          </View>
+                          <Text style={styles.editModalActionText}>Complete</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialIcons name="calendar-today" size={32} color="#F87171" /><Text style={styles.editModalActionText}>Snooze</Text></TouchableOpacity>
+                      </View>
+                      <TouchableOpacity style={[styles.editModalClose, styles.editModalCloseCircle]} onPress={() => setEditGoalId(null)}>
+                        <MaterialIcons name="close" size={22} color="#222" />
+                      </TouchableOpacity>
                     </View>
                   </View>
-                  <Modal
-                    visible={editGoalId === goal.id}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setEditGoalId(null)}
-                  >
-                    <View style={styles.editModalOverlay}>
-                      <View style={styles.editModalContent}>
-                        <TouchableOpacity style={styles.editModalEditButton}>
-                          <MaterialIcons name="edit" size={30} color="#FBBF24" />
-                          <Text style={styles.editModalEditText}>Edit</Text>
-                        </TouchableOpacity>
-                        <View style={styles.editModalCard}>
-                          <Text style={[styles.editModalGoalTitle, { textAlign: 'center' }]}>{goal.text || goal.title}</Text>
-                        </View>
-                        <View style={styles.editModalActionsRow}>
-                          <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialIcons name="mail" size={32} color="#a78bfa" /><Text style={styles.editModalActionText}>Skip</Text></TouchableOpacity>
-                          <TouchableOpacity style={styles.editModalAction}>
-                            <View style={styles.editModalActionIconBg}>
-                              <MaterialIcons name="check" size={42} color="#22C55E" />
-                            </View>
-                            <Text style={styles.editModalActionText}>Complete</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialIcons name="calendar-today" size={32} color="#F87171" /><Text style={styles.editModalActionText}>Snooze</Text></TouchableOpacity>
-                        </View>
-                        <TouchableOpacity style={[styles.editModalClose, styles.editModalCloseCircle]} onPress={() => setEditGoalId(null)}>
-                          <MaterialIcons name="close" size={22} color="#222" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </Modal>
-                </View>
-              ))
-            )}
-          </View>
-
-          {isAddingGoal ? (
-            <View style={styles.addGoalContainer}>
-              <TextInput
-                style={[styles.input, { fontFamily: 'Cinzel' }]}
-                value={newGoalTitle}
-                onChangeText={setNewGoalTitle}
-                placeholder="Enter goal title"
-                placeholderTextColor="#9CA3AF"
-                onSubmitEditing={addGoal}
-              />
-              <TouchableOpacity style={styles.addButton} onPress={addGoal}>
-                <Text style={[styles.addButtonText, { fontFamily: 'Cinzel' }]}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.addGoalButtonContainer}>
-              <TouchableOpacity 
-                style={styles.addGoalButton} 
-                onPress={() => navigation.navigate('Goal')}
-              >
-                <View style={styles.addGoalContent}>
-                  <MaterialIcons name="add" size={24} color="white" />
-                  <Text style={[styles.addGoalText, { fontFamily: 'Cinzel' }]}>Add a goal</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
+                </Modal>
+              </View>
+            ))
           )}
         </View>
+        {!isAddingGoal && (
+          <View style={[styles.addGoalButtonContainer, { marginTop: 20 }]}> 
+            <TouchableOpacity 
+              style={styles.addGoalButton} 
+              onPress={() => navigation.navigate('Goal')}
+            >
+              <View style={styles.addGoalContent}>
+                <MaterialIcons name="add" size={24} color="white" />
+                <Text style={[styles.addGoalText, { fontFamily: 'Cinzel' }]}>Add a goal</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+        {isAddingGoal && (
+          <View style={styles.addGoalContainer}>
+            <TextInput
+              style={[styles.input, { fontFamily: 'Cinzel' }]}
+              value={newGoalTitle}
+              onChangeText={setNewGoalTitle}
+              placeholder="Enter goal title"
+              placeholderTextColor="#9CA3AF"
+              onSubmitEditing={addGoal}
+            />
+            <TouchableOpacity style={styles.addButton} onPress={addGoal}>
+              <Text style={[styles.addButtonText, { fontFamily: 'Cinzel' }]}>Add</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={[styles.extraSpace, { height: height * 0.4 }]} />
       </ScrollView>
     </View>
@@ -690,6 +778,7 @@ const styles = StyleSheet.create({
     margin: 13,
     width: '90%',
     marginTop: -85,
+    marginLeft: 20,
   },
   headerContent: {
     flexDirection: 'row',
@@ -760,6 +849,7 @@ const styles = StyleSheet.create({
     width: '90%',
     marginBottom: 16,
     marginTop: 5,
+    marginLeft: 20,
   },
   goalCard: {
     backgroundColor: '#1F1F1F',
@@ -772,6 +862,7 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 0.3,
     borderColor: '#9CA3AF',
+    width: '100%',
   },
   goalContent: {
     flexDirection: 'row',
@@ -879,13 +970,12 @@ const styles = StyleSheet.create({
   },
   editModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
     alignItems: 'stretch',
     paddingBottom: 64,
   },
   editModalContent: {
-    backgroundColor: '#000',
+    // No background color for transparent modal
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
