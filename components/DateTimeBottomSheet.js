@@ -179,20 +179,25 @@ const DateTimeBottomSheet = ({
   };
 
   const handleDateSelect = (day) => {
-    const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const selectedDateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     // Prevent selecting past dates
-    if (selectedDate < today) {
+    if (selectedDateObj < today) {
       return;
     }
 
-    const newDate = `${months[currentMonth.getMonth()]} ${day}, ${currentMonth.getFullYear()}`;
+    // Use local date string to avoid timezone issues
+    const year = selectedDateObj.getFullYear();
+    const month = String(selectedDateObj.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(selectedDateObj.getDate()).padStart(2, '0');
+    const isoDate = `${year}-${month}-${dayStr}`;
+    
     setSelectedCalendarDate(day);
-    setSelectedDate(newDate);
+    setSelectedDate(isoDate);
     setCurrentView('main');
-    onDateTimeSelect?.(newDate, selectedTime);
+    onDateTimeSelect?.(isoDate, selectedTime);
   };
 
   const handleTimeSelect = (time) => {
@@ -227,8 +232,27 @@ const DateTimeBottomSheet = ({
   };
 
   const handleSimpleDateSelect = (date) => {
-    setSelectedDate(date);
-    onDateTimeSelect?.(date, selectedTime);
+    let dateToSend = date;
+    if (date === 'Tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0,0,0,0);
+      // Use local date string to avoid timezone issues
+      const year = tomorrow.getFullYear();
+      const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const day = String(tomorrow.getDate()).padStart(2, '0');
+      dateToSend = `${year}-${month}-${day}`;
+    } else if (date === 'Today') {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      // Use local date string to avoid timezone issues
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      dateToSend = `${year}-${month}-${day}`;
+    }
+    setSelectedDate(dateToSend);
+    onDateTimeSelect?.(dateToSend, selectedTime);
   };
 
   const handleSave = () => {

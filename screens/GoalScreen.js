@@ -16,6 +16,10 @@ import {
 } from "react-native"
 import Icon from "react-native-vector-icons/Feather"
 import DateTimeBottomSheet from "../components/DateTimeBottomSheet"
+import { db } from '../config/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useContext } from 'react';
+import { AuthContext } from '../contexts/AuthContext';
 
 const { height } = Dimensions.get('window');
 
@@ -24,7 +28,7 @@ export default function GoalScreen({ navigation }) {
   const [showRepeatModal, setShowRepeatModal] = useState(false)
   const [showCustomContent, setShowCustomContent] = useState(false)
   const [showEndCalendar, setShowEndCalendar] = useState(false)
-  const [repeatOption, setRepeatOption] = useState("Does not repeat")
+  const [repeatOption, setRepeatOption] = useState("Every day")
   const [endOption, setEndOption] = useState("Never")
   const [showEndOptions, setShowEndOptions] = useState(false)
   const [showDateTimePicker, setShowDateTimePicker] = useState(false)
@@ -39,6 +43,9 @@ export default function GoalScreen({ navigation }) {
   const [selectedDays, setSelectedDays] = useState([])
   const [isPickerVisible, setIsPickerVisible] = useState(false)
   const pickerScrollRef = useRef(null)
+  const { user } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
+  const currentDayShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -56,17 +63,19 @@ export default function GoalScreen({ navigation }) {
   ];
 
   const handleEndDateSelect = (day) => {
-    const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const selectedDateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     // Prevent selecting past dates
-    if (selectedDate < today) {
+    if (selectedDateObj < today) {
       return;
     }
 
-    const newDate = `${months[currentMonth.getMonth()]} ${day}, ${currentMonth.getFullYear()}`;
+    // Use unified handler to store as ISO string
+    handleDateTimeSelect(selectedDateObj);
     setSelectedCalendarDate(day);
+    const newDate = `${months[currentMonth.getMonth()]} ${day}, ${currentMonth.getFullYear()}`;
     setEndOption(`Ends on ${newDate}`);
     setShowEndCalendar(false);
     setShowEndOptions(false);
@@ -159,18 +168,74 @@ export default function GoalScreen({ navigation }) {
     return days;
   };
 
-  const handleSave = () => {
-    // Handle saving the goal
-    console.log("Goal saved:", {
-      goalText,
-      date: selectedDate,
-      time: selectedTime,
-      repeatOption,
-      endOption,
-    })
-    alert("Goal saved!")
-    navigation.goBack()
-  }
+  const handleSave = async () => {
+    if (!goalText.trim()) {
+      alert('Please enter a goal.');
+      return;
+    }
+    if (!user) {
+      alert('You must be logged in to save a goal.');
+      return;
+    }
+    setLoading(true);
+    // Convert selectedDate to ISO string (YYYY-MM-DD)
+    let goalDate;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    if (!selectedDate || selectedDate === 'Today') {
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      goalDate = `${year}-${month}-${day}`;
+    } else if (selectedDate === 'Tomorrow') {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      const year = tomorrow.getFullYear();
+      const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const day = String(tomorrow.getDate()).padStart(2, '0');
+      goalDate = `${year}-${month}-${day}`;
+    } else {
+      // If it's already in YYYY-MM-DD format, use it directly
+      if (/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+        goalDate = selectedDate;
+      } else {
+        // Try to parse other date formats
+        const parsed = new Date(selectedDate);
+        if (!isNaN(parsed)) {
+          const year = parsed.getFullYear();
+          const month = String(parsed.getMonth() + 1).padStart(2, '0');
+          const day = String(parsed.getDate()).padStart(2, '0');
+          goalDate = `${year}-${month}-${day}`;
+        } else {
+          // Fallback to today
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          goalDate = `${year}-${month}-${day}`;
+        }
+      }
+    }
+    try {
+      await addDoc(
+        collection(db, 'users', user.uid, 'goals'),
+        {
+          text: goalText,
+          date: goalDate,
+          time: selectedTime,
+          repeatOption,
+          endOption,
+          createdAt: serverTimestamp(),
+          completed: false,
+        }
+      );
+      alert('Goal saved!');
+      navigation.goBack();
+    } catch (error) {
+      alert('Failed to save goal. Please try again.');
+      console.error('Error saving goal:', error);
+    }
+    setLoading(false);
+  };
 
   const handleRepeatOptionClick = (option) => {
     if (option === "Custom...") {
@@ -217,7 +282,23 @@ export default function GoalScreen({ navigation }) {
   }
 
   const handleDateTimeSelect = (date, time) => {
-    setSelectedDate(date);
+    // Always store as ISO string
+    let isoDate = date;
+    if (date instanceof Date) {
+      isoDate = date.toISOString().slice(0, 10);
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      isoDate = date; // already ISO
+    } else if (date === 'Today') {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      isoDate = today.toISOString().slice(0, 10);
+    } else if (date === 'Tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0,0,0,0);
+      isoDate = tomorrow.toISOString().slice(0, 10);
+    }
+    setSelectedDate(isoDate);
     if (time) {
       setSelectedTime(time);
     }
@@ -507,8 +588,15 @@ export default function GoalScreen({ navigation }) {
                 {[
                   "Every day",
                   "Every weekday",
-                  "Every week on Mon",
-                  "Every month on the 12th",
+                  `Every week on ${currentDayShort}`,
+                  `Every month on the ${(() => {
+                    const day = new Date().getDate();
+                    const j = day % 10, k = day % 100;
+                    if (j === 1 && k !== 11) return day + 'st';
+                    if (j === 2 && k !== 12) return day + 'nd';
+                    if (j === 3 && k !== 13) return day + 'rd';
+                    return day + 'th';
+                  })()}`,
                   "Custom..."
                 ].map((option) => (
                   <TouchableOpacity
@@ -537,6 +625,17 @@ export default function GoalScreen({ navigation }) {
       </TouchableOpacity>
       </Modal>
     );
+
+  // When opening the calendar, sync currentMonth to selectedDate if possible
+  const openCalendar = () => {
+    let baseDate = new Date();
+    if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      baseDate = new Date(year, month - 1, day);
+    }
+    setCurrentMonth(baseDate);
+    setShowDateTimePicker(true);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -578,13 +677,39 @@ export default function GoalScreen({ navigation }) {
 
           <TouchableOpacity 
             style={styles.option}
-            onPress={() => setShowDateTimePicker(true)}
+            onPress={openCalendar}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <View style={styles.optionIcon}>
               <Icon name="calendar" size={20} color="#000" />
             </View>
-            <Text style={styles.optionText}>{selectedDate}{selectedTime !== "Any time" ? `, ${selectedTime}` : ""}</Text>
+            <Text style={styles.optionText}>{(() => {
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              if (selectedDate === 'Today' || !selectedDate) {
+                return `TODAY${selectedTime !== "Any time" ? ", " + selectedTime : ""}`;
+              } else if (selectedDate === 'Tomorrow') {
+                const tmr = new Date(today);
+                tmr.setDate(today.getDate() + 1);
+                return `TOMORROW${selectedTime !== "Any time" ? ", " + selectedTime : ""}`;
+              } else if (/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+                // ISO string: YYYY-MM-DD
+                const [year, month, day] = selectedDate.split('-').map(Number);
+                const dateObj = new Date(year, month - 1, day);
+                const weekday = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+                const monthStr = dateObj.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                return `${weekday}, ${monthStr} ${day}${selectedTime !== "Any time" ? ", " + selectedTime : ""}`;
+              } else {
+                // Try to parse e.g. '2024-05-06' or 'April 27, 2024'
+                const parsed = new Date(selectedDate);
+                if (!isNaN(parsed)) {
+                  const weekday = parsed.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+                  const monthStr = parsed.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                  return `${weekday}, ${monthStr} ${parsed.getDate()}${selectedTime !== "Any time" ? ", " + selectedTime : ""}`;
+                }
+                return `${selectedDate}${selectedTime !== "Any time" ? ", " + selectedTime : ""}`;
+              }
+            })()}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -609,8 +734,9 @@ export default function GoalScreen({ navigation }) {
             style={styles.saveButton} 
             onPress={handleSave}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            disabled={loading}
           >
-            <Text style={styles.saveButtonText}>Save</Text>
+            <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save'}</Text>
           </TouchableOpacity>
         </View>
       </View>
