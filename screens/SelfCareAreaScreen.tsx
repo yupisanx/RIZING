@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, memo } from "react"
+import * as React from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import {
   View,
   Text,
@@ -20,6 +21,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Calendar } from 'react-native-calendars'
+import { db } from '../config/firebase'
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore'
+import { auth } from '../config/firebase'
+import { useSelfCareAreas } from '../contexts/SelfCareAreaContext'
+import { useGoals } from '../contexts/GoalsContext'
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import ThreeDButton from '../components/ThreeDButton';
 
 // Define the AsyncStorage interface
 interface AsyncStorageInterface {
@@ -56,22 +64,23 @@ const theme = {
 
 const { width, height } = Dimensions.get("window")
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props)
-    this.state = { hasError: false }
-  }
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError() {
-    return { hasError: true }
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error in SelfCareAreaScreen:', error, errorInfo)
+    console.error('Error in SelfCareAreaScreen:', error, errorInfo);
   }
 
   render() {
@@ -86,10 +95,9 @@ class ErrorBoundary extends React.Component<
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
-      )
+      );
     }
-
-    return this.props.children
+    return this.props.children;
   }
 }
 
@@ -100,6 +108,7 @@ export type SelfCareArea = {
   color: string
   emoji: string
   isCustom?: boolean
+  userId?: string
 }
 
 type NavigationProp = NativeStackNavigationProp<any>
@@ -151,7 +160,6 @@ const MainScreen = memo(({
       >
         <View style={styles.titleContainer}>
           <Text style={styles.mainTitle}>My Self-Care Areas</Text>
-          <Text style={styles.subtitle}>Build habits and organize my goals to care for my whole self</Text>
         </View>
         {userAreas.length > 0 && (
           <View style={styles.areasGrid}>
@@ -203,6 +211,54 @@ const DetailScreen = memo(({
   setShowOptionsSheet: (show: boolean) => void
   setShowCalendarModal: (show: boolean) => void
 }) => {
+  const navigation = useNavigation<NavigationProp>()
+  const { goals, isLoadingGoals, refreshGoals, setGoals } = useGoals();
+  const [editGoalId, setEditGoalId] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Fetch goals from Firestore on mount
+  useEffect(() => {
+    const fetchGoalsFromFirestore = async () => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return [];
+      const userRef = doc(db, 'users', currentUser.uid);
+      const goalsRef = collection(userRef, 'goals');
+      const querySnapshot = await getDocs(goalsRef);
+      const fetchedGoals = [];
+      querySnapshot.forEach((doc) => {
+        fetchedGoals.push({ id: doc.id, ...doc.data() });
+      });
+      return fetchedGoals;
+    };
+    refreshGoals(fetchGoalsFromFirestore).finally(() => {
+      setIsInitialLoad(false);
+    });
+  }, [refreshGoals]);
+
+  // Filter goals for this area
+  const areaGoals = selectedArea ? goals.filter(goal => goal.areaId === selectedArea.id) : [];
+
+  // Toggle completion (local only for now)
+  const toggleGoalCompletion = (id: string) => {
+    setGoals(goals => goals.map(goal => goal.id === id ? { ...goal, completed: !goal.completed } : goal));
+  };
+
+  // Delete goal (local only for now)
+  const deleteGoal = (goalId: string) => {
+    setGoals(goals => goals.filter(goal => goal.id !== goalId));
+    setEditGoalId(null);
+  };
+
+  const handleAddNewGoal = () => {
+    if (selectedArea) {
+      navigation.navigate('Goal', { 
+        areaId: selectedArea.id,
+        areaName: selectedArea.name,
+        areaColor: selectedArea.color
+      })
+    }
+  }
+
   return (
     <SafeAreaView style={styles.detailContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
@@ -241,15 +297,106 @@ const DetailScreen = memo(({
 
           <View style={styles.goalsSection}>
             <Text style={styles.goalsSectionTitle}>Your goals</Text>
-            <View style={styles.emptyState}>
-              <View style={styles.emptyStateIcon}>
-                <Text style={styles.emptyStateEmoji}>🏖️</Text>
+            {isInitialLoad ? (
+              <View style={styles.goalsList}>
+                <View style={[styles.goalCard, styles.loadingCard]}>
+                  <View style={styles.goalContent}>
+                    <View style={styles.loadingPlaceholder} />
+                    <View style={{ flex: 1 }}>
+                      <View style={[styles.loadingPlaceholder, { width: '80%', height: 16 }]} />
+                    </View>
+                    <View style={styles.goalRight}>
+                      <View style={[styles.loadingPlaceholder, { width: 40, height: 16 }]} />
+                      <View style={[styles.loadingPlaceholder, { width: 42, height: 42, borderRadius: 21 }]} />
+                    </View>
+                  </View>
+                </View>
               </View>
-              <Text style={styles.emptyStateText}>You don't have any goals yet</Text>
-              <TouchableOpacity style={styles.addGoalButton} activeOpacity={0.8}>
-                <Text style={styles.addGoalButtonText}>Add a new goal</Text>
-              </TouchableOpacity>
-            </View>
+            ) : (
+              <>
+                {areaGoals.length > 0 ? (
+                  <View style={styles.goalsList}>
+                    {areaGoals.map(goal => (
+                      <View key={goal.id} style={styles.goalCard}>
+                        <View style={styles.goalContent}>
+                          <TouchableOpacity onPress={() => setEditGoalId(goal.id)} style={styles.threeDotButton}>
+                            <MaterialIcons name="more-vert" size={24} color="#374151" />
+                          </TouchableOpacity>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.goalTitle}>{goal.text || goal.title}</Text>
+                          </View>
+                          <View style={styles.goalRight}>
+                            <Text style={styles.energyValue}>5⚡</Text>
+                            <ThreeDButton
+                              onPress={() => toggleGoalCompletion(goal.id)}
+                              completed={goal.completed}
+                              size={42}
+                            />
+                          </View>
+                        </View>
+                        <Modal
+                          visible={editGoalId === goal.id}
+                          transparent
+                          animationType="fade"
+                          onRequestClose={() => setEditGoalId(null)}
+                        >
+                          <View style={styles.editModalOverlay}>
+                            <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.85)' }} />
+                            <View style={styles.editModalContent}>
+                              <TouchableOpacity style={{ position: 'absolute', top: 26, left: 26, zIndex: 10 }} onPress={() => deleteGoal(goal.id)}>
+                                <MaterialIcons name="delete" size={28} color="#F87171" />
+                              </TouchableOpacity>
+                              <TouchableOpacity style={[styles.editModalEditButton, { alignSelf: 'flex-end', marginRight: 0 }]}> 
+                                <MaterialIcons name="edit" size={30} color="#FBBF24" />
+                                <Text style={styles.editModalEditText}>Edit</Text>
+                              </TouchableOpacity>
+                              <View style={styles.editModalCard}>
+                                <Text style={[styles.editModalGoalTitle, { textAlign: 'center' }]}>{goal.text || goal.title}</Text>
+                              </View>
+                              <View style={styles.editModalActionsRow}>
+                                <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialCommunityIcons name="skip-forward" size={32} color="#a78bfa" /><Text style={styles.editModalActionText}>Skip</Text></TouchableOpacity>
+                                <TouchableOpacity style={styles.editModalAction}>
+                                  <View style={styles.editModalActionIconBg}>
+                                    <MaterialIcons name="check" size={42} color="#22C55E" />
+                                  </View>
+                                  <Text style={styles.editModalActionText}>Complete</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialIcons name="calendar-today" size={32} color="#F87171" /><Text style={styles.editModalActionText}>Snooze</Text></TouchableOpacity>
+                              </View>
+                              <TouchableOpacity style={[styles.editModalClose, styles.editModalCloseCircle]} onPress={() => setEditGoalId(null)}>
+                                <MaterialIcons name="close" size={22} color="#222" />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        </Modal>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyStateText}>You don't have any goals yet</Text>
+                  </View>
+                )}
+                {/* Always show the add goal buttons */}
+                <TouchableOpacity 
+                  style={styles.addGoalButton} 
+                  activeOpacity={0.8}
+                  onPress={handleAddNewGoal}
+                >
+                  <Text style={styles.addGoalButtonText}>Add a new goal</Text>
+                </TouchableOpacity>
+                <View style={styles.goalOptionsContainer}>
+                  <TouchableOpacity style={styles.goalOptionButton} activeOpacity={0.7}>
+                    <View style={styles.goalOptionContent}>
+                      <View style={styles.plusIconContainer}>
+                        <Ionicons name="add" size={16} color="white" />
+                      </View>
+                      <Text style={styles.goalOptionText}>Add an existing goal</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </ScrollView>
       </View>
@@ -277,7 +424,7 @@ const AreaSelectionModal = memo(({
           </TouchableOpacity>
           <Text style={styles.modalTitle}>What area do you want to focus on?</Text>
         </View>
-        <ScrollView style={styles.modalContentMain} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.modalContentMain} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
           <View style={styles.areasSelectionGrid}>
             {selfCareAreas.map((area, index) => (
               <TouchableOpacity
@@ -306,57 +453,78 @@ const AreaSelectionModal = memo(({
             <Ionicons name="add" size={20} color="#9CA3AF" />
             <Text style={styles.createCustomButtonText}>Create my own area</Text>
           </TouchableOpacity>
-          <View style={{ height: 100 }} />
         </ScrollView>
       </View>
     </View>
   </Modal>
 ))
 
+const centeredModalOverlay: { [key: string]: any } = {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+}
+
 const NewAreaModal = memo(({ 
   showNewAreaModal, 
   setShowNewAreaModal, 
   newAreaName, 
   setNewAreaName, 
-  handleCreateNewArea 
+  handleCreateNewArea,
+  isSaving
 }: { 
   showNewAreaModal: boolean
   setShowNewAreaModal: (show: boolean) => void
   newAreaName: string
   setNewAreaName: (name: string) => void
   handleCreateNewArea: () => void
-}) => (
-  <Modal visible={showNewAreaModal} animationType="fade" transparent>
-    <View style={styles.modalOverlay}>
-      <View style={styles.newAreaModalContainer}>
-        <View style={styles.newAreaModalHeader}>
-          <TouchableOpacity onPress={() => setShowNewAreaModal(false)} style={styles.absoluteCloseButton}>
-            <Ionicons name="close" size={24} color="#6B7280" />
-          </TouchableOpacity>
-          <Text style={styles.centeredModalTitle}>Create a new area</Text>
-        </View>
-        <View style={styles.newAreaModalContent}>
-          <TextInput
-            style={styles.newAreaInput}
-            placeholder="Enter area name"
-            value={newAreaName}
-            onChangeText={setNewAreaName}
-            autoFocus
-            placeholderTextColor="#9CA3AF"
-          />
-          <TouchableOpacity
-            style={[styles.saveButton, { opacity: newAreaName.trim() ? 1 : 0.5 }]}
-            onPress={handleCreateNewArea}
-            disabled={!newAreaName.trim()}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.saveButtonText}>Save</Text>
-          </TouchableOpacity>
+  isSaving: boolean
+}) => {
+  return (
+    <Modal visible={showNewAreaModal} animationType="fade" transparent>
+      <View style={styles.centeredModalOverlay}>
+        <View style={styles.newAreaModalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowNewAreaModal(false)} style={styles.absoluteCloseButton}>
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.centeredModalTitle}>Create a new area</Text>
+          </View>
+          <View style={styles.newAreaModalContent}>
+            <TextInput
+              style={styles.newAreaInput}
+              placeholder="Enter area name"
+              value={newAreaName}
+              onChangeText={setNewAreaName}
+              autoFocus
+              placeholderTextColor="#9CA3AF"
+              editable={!isSaving}
+            />
+            <TouchableOpacity
+              style={[
+                styles.saveButton, 
+                { 
+                  opacity: newAreaName.trim() && !isSaving ? 1 : 0.5,
+                  backgroundColor: isSaving ? '#9CA3AF' : '#7DD3FC'
+                }
+              ]}
+              onPress={handleCreateNewArea}
+              disabled={!newAreaName.trim() || isSaving}
+              activeOpacity={0.8}
+            >
+              {isSaving ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
-  </Modal>
-))
+    </Modal>
+  );
+})
 
 const HabitTrackerMobile = memo(({ 
   showCalendarModal, 
@@ -557,14 +725,90 @@ const HabitTrackerMobile = memo(({
   );
 });
 
+const EditAreaModal = memo(({ 
+  showEditModal, 
+  setShowEditModal, 
+  areaToEdit, 
+  handleEditArea 
+}: { 
+  showEditModal: boolean
+  setShowEditModal: (show: boolean) => void
+  areaToEdit: SelfCareArea | null
+  handleEditArea: (editedArea: SelfCareArea) => void
+}) => {
+  const [editedName, setEditedName] = useState(areaToEdit?.name || "")
+
+  useEffect(() => {
+    if (areaToEdit) {
+      setEditedName(areaToEdit.name)
+    }
+  }, [areaToEdit])
+
+  const handleSave = () => {
+    if (!editedName.trim()) {
+      Alert.alert('Error', 'Please enter a name for your area')
+      return
+    }
+
+    if (editedName.trim().length < 3) {
+      Alert.alert('Error', 'Area name must be at least 3 characters long')
+      return
+    }
+
+    if (areaToEdit) {
+      handleEditArea({
+        ...areaToEdit,
+        name: editedName.trim()
+      })
+    }
+  }
+
+  return (
+    <Modal visible={showEditModal} animationType="fade" transparent>
+      <View style={styles.centeredModalOverlay}>
+        <View style={styles.newAreaModalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.absoluteCloseButton}>
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.centeredModalTitle}>Edit Area</Text>
+          </View>
+          <View style={styles.newAreaModalContent}>
+            <TextInput
+              style={styles.newAreaInput}
+              placeholder="Enter area name"
+              value={editedName}
+              onChangeText={setEditedName}
+              autoFocus
+              placeholderTextColor="#9CA3AF"
+            />
+            <TouchableOpacity
+              style={[styles.saveButton, { opacity: editedName.trim() ? 1 : 0.5 }]}
+              onPress={handleSave}
+              disabled={!editedName.trim()}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.saveButtonText}>Save Changes</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+})
+
 const OptionsSheet = memo(({ 
   showOptionsSheet, 
   setShowOptionsSheet, 
-  selectedArea 
+  selectedArea,
+  setShowEditModal,
+  handleDeleteArea
 }: { 
   showOptionsSheet: boolean
   setShowOptionsSheet: (show: boolean) => void
   selectedArea: SelfCareArea | null
+  setShowEditModal: (show: boolean) => void
+  handleDeleteArea: (area: SelfCareArea) => void
 }) => (
   <Modal visible={showOptionsSheet} animationType="slide" transparent>
     <View style={styles.optionsOverlay}>
@@ -575,11 +819,41 @@ const OptionsSheet = memo(({
             <Ionicons name="close" size={24} color="#6B7280" />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.optionButton}>
+        <TouchableOpacity 
+          style={styles.optionButton}
+          onPress={() => {
+            setShowOptionsSheet(false)
+            setShowEditModal(true)
+          }}
+        >
           <Ionicons name="pencil" size={20} color="#6B7280" />
           <Text style={styles.optionText}>Edit Area</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.optionButton}>
+        <TouchableOpacity 
+          style={styles.optionButton}
+          onPress={() => {
+            if (selectedArea) {
+              Alert.alert(
+                "Delete Area",
+                "Are you sure you want to delete this area? This action cannot be undone.",
+                [
+                  {
+                    text: "Cancel",
+                    style: "cancel"
+                  },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                      handleDeleteArea(selectedArea)
+                      setShowOptionsSheet(false)
+                    }
+                  }
+                ]
+              )
+            }
+          }}
+        >
           <Ionicons name="trash" size={20} color="#EF4444" />
           <Text style={[styles.optionText, { color: "#EF4444" }]}>Delete Area</Text>
         </TouchableOpacity>
@@ -596,11 +870,14 @@ export default function SelfCareAreaScreen() {
   const [showCalendarModal, setShowCalendarModal] = useState<boolean>(false)
   const [showOptionsSheet, setShowOptionsSheet] = useState<boolean>(false)
   const [selectedArea, setSelectedArea] = useState<SelfCareArea | null>(null)
-  const [userAreas, setUserAreas] = useState<SelfCareArea[]>([])
   const [newAreaName, setNewAreaName] = useState<string>("")
-  const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [username, setUsername] = useState<string>("")
+  const [showEditModal, setShowEditModal] = useState<boolean>(false)
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Use context for areas and loading
+  const { userAreas, setUserAreas, isLoading, refreshAreas } = useSelfCareAreas();
 
   const handleClose = useCallback(() => {
     navigation.goBack()
@@ -617,84 +894,162 @@ export default function SelfCareAreaScreen() {
     }
   }, [])
 
-  const loadAreas = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const savedAreas = await storage.getItem('userAreas')
-      if (savedAreas) {
-        const parsedAreas: SelfCareArea[] = JSON.parse(savedAreas)
-        setUserAreas(parsedAreas)
-      }
-    } catch (err) {
-      setError('Failed to load areas. Please try again.')
-      console.error('Error loading areas:', err)
-    } finally {
-      setIsLoading(false)
+  // Fetch areas using context refresh
+  const loadAreasFromFirestore = useCallback(async () => {
+    const currentUser = auth.currentUser
+    if (!currentUser) {
+      setError('Please log in to view your areas')
+      return []
     }
-  }, [])
-
-  const saveAreas = useCallback(async (areas: SelfCareArea[]) => {
-    try {
-      setError(null)
-      await storage.setItem('userAreas', JSON.stringify(areas))
-    } catch (err) {
-      setError('Failed to save areas. Please try again.')
-      console.error('Error saving areas:', err)
-    }
+    const userRef = doc(db, 'users', currentUser.uid)
+    const areasRef = collection(userRef, 'selfCareAreas')
+    const querySnapshot = await getDocs(areasRef)
+    const areas: SelfCareArea[] = []
+    querySnapshot.forEach((doc) => {
+      areas.push({ id: doc.id, ...doc.data() } as SelfCareArea)
+    })
+    return areas
   }, [])
 
   useEffect(() => {
     loadUserData()
-    loadAreas()
+    if (userAreas.length === 0) {
+      refreshAreas(loadAreasFromFirestore)
+    } else {
+      // Optionally refresh in background
+      refreshAreas(loadAreasFromFirestore)
+    }
     return () => {
-      // Cleanup
-      setUserAreas([])
       setSelectedArea(null)
     }
-  }, [loadUserData, loadAreas])
+  }, [loadUserData, refreshAreas])
 
-  const handleSelectPredefinedArea = useCallback((area: SelfCareArea) => {
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(7);
-    const newArea: SelfCareArea = {
-      ...area,
-      id: `area_${timestamp}_${randomString}`,  // Completely new unique ID
-      isCustom: false
+  const handleSelectPredefinedArea = useCallback(async (area: SelfCareArea) => {
+    try {
+      const currentUser = auth.currentUser
+      if (!currentUser) {
+        Alert.alert('Error', 'You must be logged in to create an area')
+        return
+      }
+      Alert.alert(
+        "Create Area",
+        `Are you sure you want to create the \"${area.name}\" area?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Create",
+            style: "default",
+            onPress: async () => {
+              try {
+                const newArea: Omit<SelfCareArea, 'id'> = {
+                  name: area.name,
+                  color: area.color,
+                  emoji: area.emoji,
+                  isCustom: false,
+                  userId: currentUser.uid
+                }
+                const userRef = doc(db, 'users', currentUser.uid)
+                const areasRef = collection(userRef, 'selfCareAreas')
+                const docRef = await addDoc(areasRef, newArea)
+                const completeArea: SelfCareArea = { ...newArea, id: docRef.id }
+                setUserAreas(prev => [...prev, completeArea])
+                setShowAreaSelection(false)
+                Alert.alert('Success', 'Area created successfully!')
+              } catch (err) {
+                console.error('Error creating predefined area:', err)
+                Alert.alert('Error', 'Failed to create area. Please try again.')
+              }
+            }
+          }
+        ]
+      )
+    } catch (err) {
+      console.error('Error in handleSelectPredefinedArea:', err)
+      Alert.alert('Error', 'Something went wrong. Please try again.')
     }
-    const updatedAreas: SelfCareArea[] = [...userAreas, newArea]
-    setUserAreas(updatedAreas)
-    saveAreas(updatedAreas)
-    setShowAreaSelection(false)
-  }, [userAreas, saveAreas])
+  }, [setUserAreas])
 
-  const handleCreateNewArea = useCallback(() => {
-    if (!newAreaName.trim()) {
-      Alert.alert('Error', 'Please enter a name for your area')
-      return
+  const handleCreateNewArea = useCallback(async () => {
+    try {
+      setIsSaving(true)
+      if (!newAreaName.trim()) {
+        Alert.alert('Error', 'Please enter a name for your area')
+        return
+      }
+      if (newAreaName.trim().length < 3) {
+        Alert.alert('Error', 'Area name must be at least 3 characters long')
+        return
+      }
+      const currentUser = auth.currentUser
+      if (!currentUser) {
+        Alert.alert('Error', 'You must be logged in to create an area')
+        return
+      }
+      // Do NOT set id here, let Firestore generate it
+      const newAreaData = {
+        name: newAreaName.trim(),
+        color: theme.colors.primary,
+        emoji: "🌟",
+        isCustom: true,
+        userId: currentUser.uid
+      }
+      const userRef = doc(db, 'users', currentUser.uid)
+      const areasRef = collection(userRef, 'selfCareAreas')
+      const docRef = await addDoc(areasRef, newAreaData)
+      // Now use Firestore's ID
+      const newArea = { ...newAreaData, id: docRef.id }
+      setUserAreas(prev => [...prev, newArea])
+      setShowNewAreaModal(false)
+      setNewAreaName("")
+      Alert.alert('Success', 'Area created successfully!')
+    } catch (err) {
+      console.error('Error creating new area:', err)
+      Alert.alert('Error', 'Failed to create area. Please try again.')
+    } finally {
+      setIsSaving(false)
     }
+  }, [newAreaName, setUserAreas])
 
-    if (newAreaName.trim().length < 3) {
-      Alert.alert('Error', 'Area name must be at least 3 characters long')
-      return
+  const handleEditArea = useCallback(async (editedArea: SelfCareArea) => {
+    try {
+      if (!editedArea.id) throw new Error('Area ID is missing')
+      const currentUser = auth.currentUser
+      if (!currentUser) throw new Error('No user logged in')
+      const areaRef = doc(db, 'users', currentUser.uid, 'selfCareAreas', editedArea.id)
+      await updateDoc(areaRef, { name: editedArea.name })
+      setUserAreas(prev => prev.map(area => area.id === editedArea.id ? editedArea : area))
+      setShowEditModal(false)
+    } catch (err) {
+      console.error('Error editing area:', err)
+      Alert.alert('Error', 'Failed to edit area. Please try again.')
     }
+  }, [setUserAreas])
 
-    const newArea: SelfCareArea = {
-      id: Date.now().toString(),
-      name: newAreaName.trim(),
-      color: theme.colors.primary,
-      emoji: "🌟",
-      isCustom: true
+  const handleDeleteArea = useCallback(async (areaToDelete: SelfCareArea) => {
+    try {
+      if (!areaToDelete.id) {
+        console.error('Area ID is missing:', areaToDelete)
+        Alert.alert('Error', 'Cannot delete area: Missing ID')
+        return
+      }
+      const currentUser = auth.currentUser
+      if (!currentUser) {
+        Alert.alert('Error', 'You must be logged in to delete an area')
+        return
+      }
+      const areaRef = doc(db, 'users', currentUser.uid, 'selfCareAreas', areaToDelete.id)
+      await deleteDoc(areaRef)
+      setUserAreas(prev => prev.filter(area => area.id !== areaToDelete.id))
+      setShowOptionsSheet(false)
+      setCurrentView("main")
+      Alert.alert('Success', 'Area deleted successfully!')
+    } catch (err) {
+      console.error('Error deleting area:', err)
+      Alert.alert('Error', 'Failed to delete area. Please try again.')
     }
+  }, [setUserAreas])
 
-    const updatedAreas: SelfCareArea[] = [...userAreas, newArea]
-    setUserAreas(updatedAreas)
-    saveAreas(updatedAreas)
-    setShowNewAreaModal(false)
-    setNewAreaName("")
-  }, [newAreaName, userAreas, saveAreas])
-
-  if (isLoading) {
+  if (isLoading && userAreas.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -706,7 +1061,7 @@ export default function SelfCareAreaScreen() {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={loadAreas}>
+        <TouchableOpacity style={styles.retryButton} onPress={() => refreshAreas(loadAreasFromFirestore)}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -744,6 +1099,7 @@ export default function SelfCareAreaScreen() {
         newAreaName={newAreaName}
         setNewAreaName={setNewAreaName}
         handleCreateNewArea={handleCreateNewArea}
+        isSaving={isSaving}
       />
       <HabitTrackerMobile 
         showCalendarModal={showCalendarModal}
@@ -754,6 +1110,14 @@ export default function SelfCareAreaScreen() {
         showOptionsSheet={showOptionsSheet}
         setShowOptionsSheet={setShowOptionsSheet}
         selectedArea={selectedArea}
+        setShowEditModal={setShowEditModal}
+        handleDeleteArea={handleDeleteArea}
+      />
+      <EditAreaModal
+        showEditModal={showEditModal}
+        setShowEditModal={setShowEditModal}
+        areaToEdit={selectedArea}
+        handleEditArea={handleEditArea}
       />
     </ErrorBoundary>
   )
@@ -853,24 +1217,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Cinzel',
   },
   areasGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    flexDirection: "column",
     marginBottom: 24,
+    gap: 16,
   },
   areaCard: {
-    width: (width - 72) / 2,
+    width: "100%",
     borderRadius: 16,
-    marginBottom: 16,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    minHeight: 76,
   },
   areaCardContent: {
     padding: 24,
     alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
   },
   areaCardTitle: {
     fontSize: 16,
@@ -890,6 +1255,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     marginBottom: 32,
     backgroundColor: "transparent",
+    minHeight: 72,
   },
   newAreaButtonText: {
     fontSize: 16,
@@ -934,13 +1300,22 @@ const styles = StyleSheet.create({
   bottomSpacer: {
     height: Platform.OS === 'android' ? 24 : 32,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
   modalContainerMain: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: height * 0.9,
+    maxHeight: height * 0.9,
     width: '100%',
     overflow: 'hidden',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1165,18 +1540,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 48,
   },
-  emptyStateIcon: {
-    width: 96,
-    height: 96,
-    backgroundColor: "#DBEAFE",
-    borderRadius: 48,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  emptyStateEmoji: {
-    fontSize: 48,
-  },
   emptyStateText: {
     fontSize: 16,
     color: "#6B7280",
@@ -1198,16 +1561,31 @@ const styles = StyleSheet.create({
     color: "white",
     fontFamily: 'Cinzel',
   },
-  addExistingButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
+  goalOptionsContainer: {
+    marginTop: 16,
+    marginBottom: 96,
+    alignItems: 'center',
+    gap: 12,
   },
-  addExistingButtonText: {
+  goalOptionButton: {
+    paddingVertical: 8,
+  },
+  goalOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  plusIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#9CA3AF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  goalOptionText: {
     fontSize: 16,
-    color: "#6B7280",
-    marginLeft: 8,
+    color: '#6B7280',
     fontFamily: 'Cinzel',
   },
   optionsOverlay: {
@@ -1277,11 +1655,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Cinzel',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
@@ -1473,14 +1846,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     overflow: 'hidden',
   },
-  newAreaModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
   newAreaModalContent: {
     paddingHorizontal: 20,
     paddingVertical: 24,
@@ -1510,5 +1875,205 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'Cinzel',
     marginTop: -3,
+  },
+  centeredModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+    marginTop: 24,
+    marginBottom: 16,
+    fontFamily: 'Cinzel',
+  },
+  colorGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 16,
+  },
+  colorOption: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  selectedColor: {
+    borderColor: "#374151",
+    transform: [{ scale: 1.1 }],
+  },
+  emojiGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 24,
+  },
+  emojiOption: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  selectedEmoji: {
+    borderColor: "#374151",
+    backgroundColor: "#E5E7EB",
+  },
+  emojiText: {
+    fontSize: 24,
+  },
+  goalsList: {
+    width: '100%',
+    marginBottom: 16,
+    marginTop: 5,
+  },
+  goalCard: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 24,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 0.3,
+    borderColor: '#E5E7EB',
+    width: '98%',
+    alignSelf: 'center',
+  },
+  goalContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  goalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#374151',
+    flex: 1,
+    fontFamily: 'Cinzel',
+    marginTop: 10,
+  },
+  goalRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  energyValue: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#60a5fa',
+    marginRight: 12,
+    fontFamily: 'Cinzel',
+  },
+  threeDotButton: {
+    marginRight: 12,
+    marginLeft: -18,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'stretch',
+    paddingBottom: 64,
+  },
+  editModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+  },
+  editModalEditButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  editModalEditText: {
+    color: '#FBBF24',
+    fontWeight: 'bold',
+    marginLeft: 6,
+    fontFamily: 'Cinzel',
+  },
+  editModalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+    width: '100%',
+    height: 160,
+    justifyContent: 'center',
+  },
+  editModalGoalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 8,
+    fontFamily: 'Cinzel',
+  },
+  editModalActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 24,
+  },
+  editModalAction: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  editModalActionText: {
+    color: '#fff',
+    marginTop: 4,
+    fontSize: 14,
+    fontFamily: 'Cinzel',
+  },
+  editModalClose: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#222',
+    borderRadius: 12,
+    alignItems: 'center',
+    width: '50%',
+  },
+  editModalCloseCircle: {
+    backgroundColor: '#d1d5db',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: -8,
+  },
+  editModalActionIconBg: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    width: 73,
+    height: 73,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+    marginTop: -5,
+  },
+  loadingCard: {
+    opacity: 0.7,
+  },
+  loadingPlaceholder: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+    width: 24,
+    height: 24,
   },
 }) 

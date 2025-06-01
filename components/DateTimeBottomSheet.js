@@ -10,6 +10,8 @@ import {
   Platform,
 } from 'react-native';
 import Icon from "react-native-vector-icons/Feather";
+import { MaterialIcons } from '@expo/vector-icons';
+import Calendar from 'react-native-calendars/src/calendar';
 
 const DateTimeBottomSheet = ({ 
   visible, 
@@ -232,7 +234,9 @@ const DateTimeBottomSheet = ({
   };
 
   const handleSimpleDateSelect = (date) => {
+    setSelectedDate(date);
     let dateToSend = date;
+    
     if (date === 'Tomorrow') {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -251,7 +255,7 @@ const DateTimeBottomSheet = ({
       const day = String(today.getDate()).padStart(2, '0');
       dateToSend = `${year}-${month}-${day}`;
     }
-    setSelectedDate(dateToSend);
+    
     onDateTimeSelect?.(dateToSend, selectedTime);
   };
 
@@ -440,6 +444,77 @@ const DateTimeBottomSheet = ({
     </View>
   );
 
+  const renderDatePicker = () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayStr = today.toISOString().split('T')[0];
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const selectedDateStr = selectedDate === 'Today' ? todayStr : 
+                           selectedDate === 'Tomorrow' ? tomorrowStr : 
+                           selectedDate;
+
+    return (
+      <View style={styles.datePickerContainer}>
+        <View style={styles.simpleDateOptions}>
+          <TouchableOpacity 
+            style={[styles.simpleDateOption, selectedDate === 'Today' && styles.selectedOption]} 
+            onPress={() => handleSimpleDateSelect('Today')}
+          >
+            <Text style={[styles.simpleDateText, selectedDate === 'Today' && styles.selectedText]}>Today</Text>
+            {selectedDate === 'Today' && (
+              <View style={styles.verifiedBadge}>
+                <MaterialIcons name="check" size={16} color="#000" />
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.simpleDateOption, selectedDate === 'Tomorrow' && styles.selectedOption]} 
+            onPress={() => handleSimpleDateSelect('Tomorrow')}
+          >
+            <Text style={[styles.simpleDateText, selectedDate === 'Tomorrow' && styles.selectedText]}>Tomorrow</Text>
+            {selectedDate === 'Tomorrow' && (
+              <View style={styles.verifiedBadge}>
+                <MaterialIcons name="check" size={16} color="#000" />
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+        <View style={styles.calendarContainer}>
+          <Calendar
+            current={selectedDateStr}
+            minDate={todayStr}
+            onDayPress={handleDateSelect}
+            markedDates={{
+              [selectedDateStr]: { selected: true, selectedColor: '#60a5fa' }
+            }}
+            theme={{
+              calendarBackground: 'transparent',
+              textSectionTitleColor: '#9CA3AF',
+              selectedDayBackgroundColor: '#60a5fa',
+              selectedDayTextColor: '#ffffff',
+              todayTextColor: '#60a5fa',
+              dayTextColor: '#ffffff',
+              textDisabledColor: '#4B5563',
+              dotColor: '#60a5fa',
+              selectedDotColor: '#ffffff',
+              arrowColor: '#60a5fa',
+              monthTextColor: '#ffffff',
+              indicatorColor: '#60a5fa',
+              textDayFontFamily: 'Cinzel',
+              textMonthFontFamily: 'Cinzel',
+              textDayHeaderFontFamily: 'Cinzel',
+              textDayFontSize: 14,
+              textMonthFontSize: 16,
+              textDayHeaderFontSize: 14
+            }}
+          />
+        </View>
+      </View>
+    );
+  };
+
   return (
     <Modal
       visible={visible}
@@ -496,6 +571,7 @@ const DateTimeBottomSheet = ({
           {currentView === 'main' && renderMainView()}
           {currentView === 'calendar' && renderCalendarView()}
           {currentView === 'time' && renderTimeView()}
+          {currentView === 'datePicker' && renderDatePicker()}
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -794,6 +870,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Cinzel-Regular',
+  },
+  datePickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    height: 250,
+    marginTop: -8,
+    position: 'relative',
+    marginLeft: -20,
+  },
+  simpleDateOptions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  simpleDateOption: {
+    padding: 16,
+    borderRadius: 16,
+    marginHorizontal: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  selectedOption: {
+    backgroundColor: '#f5f5f5',
+  },
+  simpleDateText: {
+    color: '#666',
+    fontSize: 16,
+    fontFamily: 'Cinzel-Regular',
+  },
+  selectedText: {
+    color: '#000',
+    fontWeight: '500',
+  },
+  verifiedBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
 });
 

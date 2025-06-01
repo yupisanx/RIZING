@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   View,
   Text,
@@ -13,17 +13,19 @@ import {
   StatusBar,
   Platform,
   Dimensions,
+  Alert,
 } from "react-native"
 import Icon from "react-native-vector-icons/Feather"
 import DateTimeBottomSheet from "../components/DateTimeBottomSheet"
 import { db } from '../config/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDocs, collection as fsCollection } from 'firebase/firestore';
 import { useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import { FREQUENCY, createPattern } from '../utils/recurrence';
 
 const { height } = Dimensions.get('window');
 
-export default function GoalScreen({ navigation }) {
+export default function GoalScreen({ navigation, route }) {
   const [goalText, setGoalText] = useState("")
   const [showRepeatModal, setShowRepeatModal] = useState(false)
   const [showCustomContent, setShowCustomContent] = useState(false)
@@ -46,6 +48,9 @@ export default function GoalScreen({ navigation }) {
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const currentDayShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
+  const [showAreaModal, setShowAreaModal] = useState(false);
+  const [selectedArea, setSelectedArea] = useState(null); // {id, name, color, emoji}
+  const [userAreas, setUserAreas] = useState([]);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -61,6 +66,26 @@ export default function GoalScreen({ navigation }) {
     { key: 'Fri', label: 'F' },
     { key: 'Sat', label: 'S' }
   ];
+
+  // Fetch user self-care areas
+  useEffect(() => {
+    if (!user) return;
+    const fetchAreas = async () => {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const areasRef = fsCollection(userRef, 'selfCareAreas');
+        const querySnapshot = await getDocs(areasRef);
+        const areas = [];
+        querySnapshot.forEach((doc) => {
+          areas.push({ id: doc.id, ...doc.data() });
+        });
+        setUserAreas(areas);
+      } catch (err) {
+        console.error('Error fetching self-care areas:', err);
+      }
+    };
+    fetchAreas();
+  }, [user]);
 
   const handleEndDateSelect = (day) => {
     const selectedDateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
@@ -170,71 +195,179 @@ export default function GoalScreen({ navigation }) {
 
   const handleSave = async () => {
     if (!goalText.trim()) {
-      alert('Please enter a goal.');
+      Alert.alert('Error', 'Please enter a goal');
       return;
     }
+
     if (!user) {
-      alert('You must be logged in to save a goal.');
+      Alert.alert('Error', 'You must be logged in to create a goal');
       return;
     }
-    setLoading(true);
-    // Convert selectedDate to ISO string (YYYY-MM-DD)
-    let goalDate;
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    if (!selectedDate || selectedDate === 'Today') {
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      goalDate = `${year}-${month}-${day}`;
-    } else if (selectedDate === 'Tomorrow') {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(today.getDate() + 1);
-      const year = tomorrow.getFullYear();
-      const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-      const day = String(tomorrow.getDate()).padStart(2, '0');
-      goalDate = `${year}-${month}-${day}`;
-    } else {
-      // If it's already in YYYY-MM-DD format, use it directly
-      if (/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
-        goalDate = selectedDate;
+
+    try {
+      setLoading(true);
+
+      // Convert selected date to ISO string (YYYY-MM-DD)
+      let isoDate;
+      if (selectedDate === 'Today') {
+        const today = new Date();
+        isoDate = today.toISOString().split('T')[0];
+      } else if (selectedDate === 'Tomorrow') {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        isoDate = tomorrow.toISOString().split('T')[0];
       } else {
-        // Try to parse other date formats
-        const parsed = new Date(selectedDate);
-        if (!isNaN(parsed)) {
-          const year = parsed.getFullYear();
-          const month = String(parsed.getMonth() + 1).padStart(2, '0');
-          const day = String(parsed.getDate()).padStart(2, '0');
-          goalDate = `${year}-${month}-${day}`;
-        } else {
-          // Fallback to today
-          const year = today.getFullYear();
-          const month = String(today.getMonth() + 1).padStart(2, '0');
-          const day = String(today.getDate()).padStart(2, '0');
-          goalDate = `${year}-${month}-${day}`;
+        const date = new Date(selectedDate);
+        isoDate = date.toISOString().split('T')[0];
+      }
+
+      // Determine repeat pattern based on selections
+      let repeatPattern = null;
+      if (repeatOption === 'Every day') {
+        repeatPattern = createPattern(FREQUENCY.DAILY);
+      } else if (repeatOption === 'Every week') {
+        repeatPattern = createPattern(FREQUENCY.WEEKLY, {
+          days: ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+        });
+      } else if (repeatOption === 'Every month') {
+        repeatPattern = createPattern(FREQUENCY.MONTHLY, {
+          days: [isoDate.split('-')[2]]
+        });
+      }
+
+      // Create the goal document
+      const goalData = {
+        text: goalText,
+        startDate: isoDate,
+        time: selectedTime,
+        repeat: repeatPattern ? {
+          pattern: repeatPattern,
+          modifications: {},
+          exclusions: []
+        } : null,
+        status: 'pending',
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        areaId: selectedArea ? selectedArea.id : null,
+        areaName: selectedArea ? selectedArea.name : null,
+        areaColor: selectedArea ? selectedArea.color : null,
+        areaEmoji: selectedArea ? selectedArea.emoji : null,
+      };
+
+      // Save to Firestore
+      await addDoc(collection(db, 'users', user.uid, 'goals'), goalData);
+
+      // Only reset the goal text, keep other selections
+      setGoalText('');
+      
+      // Show success message
+      Alert.alert('Success', 'Goal created successfully!');
+    } catch (error) {
+      console.error('Error saving goal:', error);
+      Alert.alert('Error', 'Failed to save goal. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add utility functions for recurrence
+  const generateInstances = (goal, startDate, endDate) => {
+    if (!goal.repeat) {
+      return [{
+        date: goal.startDate,
+        text: goal.text,
+        time: goal.time,
+        modified: false
+      }];
+    }
+
+    const instances = [];
+    const pattern = goal.repeat.pattern;
+    let currentDate = new Date(startDate);
+    const end = new Date(endDate);
+
+    while (currentDate <= end) {
+      if (isValidInstance(currentDate, pattern, goal.repeat.exclusions)) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const modification = goal.repeat.modifications[dateStr];
+        
+        instances.push({
+          date: dateStr,
+          text: modification?.text || goal.text,
+          time: modification?.time || goal.time,
+          modified: !!modification
+        });
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return instances;
+  };
+
+  const isValidInstance = (date, pattern, exclusions) => {
+    const dateStr = date.toISOString().split('T')[0];
+    if (exclusions.includes(dateStr)) {
+      return false;
+    }
+
+    const day = date.getDay();
+    const monthDay = date.getDate();
+
+    switch (pattern.frequency) {
+      case 'DAILY':
+        return true;
+      case 'WEEKLY':
+        if (pattern.byDay) {
+          const dayStr = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][day];
+          return pattern.byDay.includes(dayStr);
+        }
+        return true;
+      case 'MONTHLY':
+        if (pattern.byMonthDay) {
+          return pattern.byMonthDay.includes(monthDay.toString());
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const modifyInstance = (goal, date, modification) => {
+    if (!goal.repeat) {
+      return {
+        ...goal,
+        text: modification.text || goal.text,
+        time: modification.time || goal.time
+      };
+    }
+
+    return {
+      ...goal,
+      repeat: {
+        ...goal.repeat,
+        modifications: {
+          ...goal.repeat.modifications,
+          [date]: {
+            ...goal.repeat.modifications[date],
+            ...modification
+          }
         }
       }
+    };
+  };
+
+  const excludeInstance = (goal, date) => {
+    if (!goal.repeat) {
+      return goal;
     }
-    try {
-      await addDoc(
-        collection(db, 'users', user.uid, 'goals'),
-        {
-          text: goalText,
-          date: goalDate,
-          time: selectedTime,
-          repeatOption,
-          endOption,
-          createdAt: serverTimestamp(),
-          completed: false,
-        }
-      );
-      alert('Goal saved!');
-      navigation.goBack();
-    } catch (error) {
-      alert('Failed to save goal. Please try again.');
-      console.error('Error saving goal:', error);
-    }
-    setLoading(false);
+
+    return {
+      ...goal,
+      repeat: {
+        ...goal.repeat,
+        exclusions: [...goal.repeat.exclusions, date]
+      }
+    };
   };
 
   const handleRepeatOptionClick = (option) => {
@@ -668,11 +801,14 @@ export default function GoalScreen({ navigation }) {
           <TouchableOpacity 
             style={styles.option}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            onPress={() => setShowAreaModal(true)}
           >
             <View style={styles.optionIcon}>
               <Icon name="plus" size={20} color="#000" />
             </View>
-            <Text style={styles.optionText}>Add to an area</Text>
+            <Text style={styles.optionText}>
+              {selectedArea ? selectedArea.name : 'Add to an area'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -747,6 +883,53 @@ export default function GoalScreen({ navigation }) {
         onClose={() => setShowDateTimePicker(false)}
         onDateTimeSelect={handleDateTimeSelect}
       />
+
+      {/* Area Selection Modal */}
+      <Modal
+        visible={showAreaModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAreaModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalContainer}
+          activeOpacity={1}
+          onPress={() => setShowAreaModal(false)}
+        >
+          <TouchableOpacity
+            style={[styles.modalContent, Platform.OS === 'ios' && styles.modalContentIOS]}
+            activeOpacity={1}
+            onPress={e => e.stopPropagation()}
+          >
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#374151', marginBottom: 24, textAlign: 'center', fontFamily: 'Cinzel' }}>Choose a Self-Care Area</Text>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, backgroundColor: selectedArea === null ? '#F3F4F6' : 'transparent', marginBottom: 8 }}
+              onPress={() => { setSelectedArea(null); }}
+            >
+              <Text style={{ fontSize: 16, color: '#374151', fontFamily: 'Cinzel' }}>None</Text>
+              {selectedArea === null && <Icon name="check-circle" size={22} color="#000" />}
+            </TouchableOpacity>
+            {userAreas.map(area => (
+              <TouchableOpacity
+                key={area.id}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, backgroundColor: selectedArea?.id === area.id ? '#F3F4F6' : 'transparent', marginBottom: 8 }}
+                onPress={() => { setSelectedArea(area); }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 16, color: '#374151', fontFamily: 'Cinzel' }}>{area.name}</Text>
+                </View>
+                {selectedArea?.id === area.id && <Icon name="check-circle" size={22} color="#000" />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={{ backgroundColor: '#000', borderRadius: 12, paddingVertical: 16, marginTop: 16 }}
+              onPress={() => setShowAreaModal(false)}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', textAlign: 'center', fontFamily: 'Cinzel' }}>Done</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }

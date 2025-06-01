@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@babel/runtime": "^7.27.3",
     "@expo/vector-icons": "^14.1.0",
     "@gorhom/bottom-sheet": "^5.1.2",
     "@react-native-async-storage/async-storage": "^2.1.2",
@@ -36,6 +37,7 @@
     "react-native-bottom-sheet": "^1.0.3",
     "react-native-calendars": "^1.1312.1",
     "react-native-chart-kit": "^6.12.0",
+    "react-native-confetti-cannon": "^1.5.2",
     "react-native-dotenv": "^3.4.11",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-reanimated": "~3.17.4",
