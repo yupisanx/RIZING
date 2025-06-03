@@ -60,7 +60,7 @@ export default function MenuScreen() {
             <TouchableOpacity 
               style={styles.gridCard} 
               activeOpacity={0.7}
-              onPress={() => navigation.navigate('Goal')}
+              onPress={() => navigation.navigate('PreGoalScreen')}
             >
               <View style={styles.iconContainer}>
                 <View style={styles.goalsIconBg}>
@@ -103,7 +103,7 @@ export default function MenuScreen() {
           </View>
 
           {/* History */}
-          <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.7} onPress={() => navigation.navigate('PreGoalScreen')}>
             <View style={styles.iconContainer}>
               <View style={styles.historyIconBg}>
                 <View style={styles.historyIconCalendar}>

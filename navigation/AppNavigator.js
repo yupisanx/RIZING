@@ -15,6 +15,7 @@ import LoadingScreen from '../screens/LoadingScreen';
 import SelfCareAreaScreen from '../screens/SelfCareAreaScreen';
 import { SelfCareAreaProvider } from '../contexts/SelfCareAreaContext';
 import { GoalsProvider } from '../contexts/GoalsContext';
+import PreGoalScreen from '../screens/PreGoalScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -100,6 +101,13 @@ export default function AppNavigator() {
                 <Stack.Screen 
                   name="SelfCareArea" 
                   component={SelfCareAreaScreen}
+                  options={{
+                    animation: 'slide_from_right',
+                  }}
+                />
+                <Stack.Screen 
+                  name="PreGoalScreen" 
+                  component={PreGoalScreen}
                   options={{
                     animation: 'slide_from_right',
                   }}

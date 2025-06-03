@@ -22,12 +22,13 @@ import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Calendar } from 'react-native-calendars'
 import { db } from '../config/firebase'
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, increment, arrayUnion } from 'firebase/firestore'
 import { auth } from '../config/firebase'
 import { useSelfCareAreas } from '../contexts/SelfCareAreaContext'
 import { useGoals } from '../contexts/GoalsContext'
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ThreeDButton from '../components/ThreeDButton';
+import { useAuth } from '../contexts/AuthContext'
 
 // Define the AsyncStorage interface
 interface AsyncStorageInterface {
@@ -215,6 +216,7 @@ const DetailScreen = memo(({
   const { goals, isLoadingGoals, refreshGoals, setGoals } = useGoals();
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const { user } = useAuth();
 
   // Fetch goals from Firestore on mount
   useEffect(() => {
@@ -238,15 +240,68 @@ const DetailScreen = memo(({
   // Filter goals for this area
   const areaGoals = selectedArea ? goals.filter(goal => goal.areaId === selectedArea.id) : [];
 
-  // Toggle completion (local only for now)
-  const toggleGoalCompletion = (id: string) => {
-    setGoals(goals => goals.map(goal => goal.id === id ? { ...goal, completed: !goal.completed } : goal));
+  // Toggle completion with new structure
+  const toggleGoalCompletion = async (id: string) => {
+    try {
+      const goal = goals.find(g => g.id === id);
+      if (!goal || !user) return;
+
+      const now = new Date();
+      const completionData = {
+        completedAt: now.toISOString(),
+        notes: '',
+        energy: 5,
+      };
+
+      const goalRef = doc(db, 'users', user.uid, 'goals', id);
+      
+      if (goal.status === 'active') {
+        // Mark as completed
+        await updateDoc(goalRef, {
+          status: 'completed',
+          lastCompletedAt: now.toISOString(),
+          totalCompletions: increment(1),
+          completions: arrayUnion(completionData),
+        });
+      } else {
+        // Mark as active again
+        await updateDoc(goalRef, {
+          status: 'active',
+          lastCompletedAt: null,
+        });
+      }
+
+      // Update local state
+      setGoals(goals => goals.map(g => 
+        g.id === id 
+          ? { 
+              ...g, 
+              status: g.status === 'active' ? 'completed' : 'active',
+              lastCompletedAt: g.status === 'active' ? now.toISOString() : null,
+              totalCompletions: g.status === 'active' ? (g.totalCompletions || 0) + 1 : g.totalCompletions,
+              completions: g.status === 'active' 
+                ? [...(g.completions || []), completionData]
+                : g.completions,
+            }
+          : g
+      ));
+    } catch (error) {
+      console.error('Error toggling goal completion:', error);
+      Alert.alert('Error', 'Failed to update goal completion status.');
+    }
   };
 
-  // Delete goal (local only for now)
-  const deleteGoal = (goalId: string) => {
-    setGoals(goals => goals.filter(goal => goal.id !== goalId));
-    setEditGoalId(null);
+  // Delete goal with new structure
+  const deleteGoal = async (goalId: string) => {
+    try {
+      if (!user) return;
+      await deleteDoc(doc(db, 'users', user.uid, 'goals', goalId));
+      setGoals(goals => goals.filter(goal => goal.id !== goalId));
+      setEditGoalId(null);
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      Alert.alert('Error', 'Failed to delete goal.');
+    }
   };
 
   const handleAddNewGoal = () => {
@@ -258,6 +313,49 @@ const DetailScreen = memo(({
       })
     }
   }
+
+  // Get goals for selected date
+  const getGoalsForDate = (date: Date) => {
+    // Create date objects with time set to midnight for accurate comparison
+    const selectedDateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const selectedDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+    return goals.filter(goal => {
+      // For completed goals, check completions array
+      if (goal.completions && Array.isArray(goal.completions)) {
+        const hasCompletion = goal.completions.some(completion => {
+          const completionDate = new Date(completion.completedAt);
+          // Adjust for timezone offset
+          const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
+          return localCompletionDate >= selectedDateStart && localCompletionDate < selectedDateEnd;
+        });
+        if (hasCompletion) return true;
+      }
+      
+      // For uncompleted goals, check if they exist on this date
+      const goalDate = new Date(goal.startDate);
+      // Adjust for timezone offset
+      const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
+      const goalDateStart = new Date(localGoalDate.getFullYear(), localGoalDate.getMonth(), localGoalDate.getDate());
+      return goalDateStart.getTime() === selectedDateStart.getTime();
+    });
+  };
+
+  // Check if goal was completed on selected date
+  const isGoalCompletedOnDate = (goal: any, date: Date) => {
+    if (!goal.completions || !Array.isArray(goal.completions)) return false;
+    
+    // Create date objects with time set to midnight for accurate comparison
+    const selectedDateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const selectedDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+    return goal.completions.some(completion => {
+      const completionDate = new Date(completion.completedAt);
+      // Adjust for timezone offset
+      const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
+      return localCompletionDate >= selectedDateStart && localCompletionDate < selectedDateEnd;
+    });
+  };
 
   return (
     <SafeAreaView style={styles.detailContainer}>
@@ -323,10 +421,12 @@ const DetailScreen = memo(({
                             <MaterialIcons name="more-vert" size={24} color="#374151" />
                           </TouchableOpacity>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.goalTitle}>{goal.text || goal.title}</Text>
+                            <Text style={[
+                              styles.goalTitle,
+                              goal.completed && { textDecorationLine: 'line-through', color: '#9CA3AF' }
+                            ]}>{goal.text || goal.title}</Text>
                           </View>
                           <View style={styles.goalRight}>
-                            <Text style={styles.energyValue}>5⚡</Text>
                             <ThreeDButton
                               onPress={() => toggleGoalCompletion(goal.id)}
                               completed={goal.completed}
@@ -537,6 +637,8 @@ const HabitTrackerMobile = memo(({
 }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { goals, setGoals } = useGoals();
+  const { user } = useAuth();
 
   // Reset to current month when modal opens
   useEffect(() => {
@@ -544,6 +646,124 @@ const HabitTrackerMobile = memo(({
       setCurrentMonth(new Date());
     }
   }, [showCalendarModal]);
+
+  // Toggle goal completion
+  const toggleGoalCompletion = async (goalId: string) => {
+    try {
+      const goal = goals.find(g => g.id === goalId);
+      if (!goal || !user) return;
+
+      const now = new Date();
+      const completionData = {
+        completedAt: now.toISOString(),
+        notes: '',
+        energy: 5,
+      };
+
+      const goalRef = doc(db, 'users', user.uid, 'goals', goalId);
+      
+      if (goal.status === 'active') {
+        // Mark as completed
+        await updateDoc(goalRef, {
+          status: 'completed',
+          lastCompletedAt: now.toISOString(),
+          totalCompletions: increment(1),
+          completions: arrayUnion(completionData),
+        });
+      } else {
+        // Mark as active again
+        await updateDoc(goalRef, {
+          status: 'active',
+          lastCompletedAt: null,
+        });
+      }
+
+      // Update local state
+      setGoals(goals => goals.map(g => 
+        g.id === goalId 
+          ? { 
+              ...g, 
+              status: g.status === 'active' ? 'completed' : 'active',
+              lastCompletedAt: g.status === 'active' ? now.toISOString() : null,
+              totalCompletions: g.status === 'active' ? (g.totalCompletions || 0) + 1 : g.totalCompletions,
+              completions: g.status === 'active' 
+                ? [...(g.completions || []), completionData]
+                : g.completions,
+            }
+          : g
+      ));
+    } catch (error) {
+      console.error('Error toggling goal completion:', error);
+      Alert.alert('Error', 'Failed to update goal completion status.');
+    }
+  };
+
+  // Check if goal was completed on selected date
+  const isGoalCompletedOnDate = (goal: any, date: Date) => {
+    if (!goal.completions || !Array.isArray(goal.completions)) return false;
+    
+    // Create date objects with time set to midnight for accurate comparison
+    const selectedDateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const selectedDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+    return goal.completions.some(completion => {
+      const completionDate = new Date(completion.completedAt);
+      // Adjust for timezone offset
+      const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
+      return localCompletionDate >= selectedDateStart && localCompletionDate < selectedDateEnd;
+    });
+  };
+
+  // Get goals for selected date
+  const getGoalsForDate = (date: Date) => {
+    // Create date objects with time set to midnight for accurate comparison
+    const selectedDateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const selectedDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+    return goals.filter(goal => {
+      // For completed goals, check completions array
+      if (goal.completions && Array.isArray(goal.completions)) {
+        const hasCompletion = goal.completions.some(completion => {
+          const completionDate = new Date(completion.completedAt);
+          // Adjust for timezone offset
+          const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
+          return localCompletionDate >= selectedDateStart && localCompletionDate < selectedDateEnd;
+        });
+        if (hasCompletion) return true;
+      }
+      
+      // For uncompleted goals, check if they exist on this date
+      const goalDate = new Date(goal.startDate);
+      // Adjust for timezone offset
+      const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
+      const goalDateStart = new Date(localGoalDate.getFullYear(), localGoalDate.getMonth(), localGoalDate.getDate());
+      return goalDateStart.getTime() === selectedDateStart.getTime();
+    });
+  };
+
+  // Get completed goals count for selected date
+  const completedGoalsCount = getGoalsForDate(selectedDate).length;
+
+  // Get active days count for current month
+  const getActiveDaysCount = () => {
+    const daysInMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      0
+    ).getDate();
+    
+    let activeDays = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+      const goalsForDate = getGoalsForDate(date);
+      // Check if any goal was completed on this date
+      const hasCompletedGoal = goalsForDate.some(goal => isGoalCompletedOnDate(goal, date));
+      if (hasCompletedGoal) {
+        activeDays++;
+      }
+    }
+    return activeDays;
+  };
 
   const daysInMonth = new Date(
     currentMonth.getFullYear(),
@@ -608,20 +828,24 @@ const HabitTrackerMobile = memo(({
           week.push(<View key={`empty-${dayIndex}`} style={styles.calendarDay} />);
         } else {
           const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dayNumber);
+          const isTodayDate = isToday(date);
+          const isSelectedDate = isSelected(date);
+          const showTodayHighlight = isTodayDate && !isSelectedDate && !selectedDate;
+          
           week.push(
             <TouchableOpacity
               key={dayNumber}
               style={[
                 styles.calendarDay,
-                isSelected(date) && styles.selectedDay,
-                isToday(date) && styles.todayDay
+                isSelectedDate && styles.selectedDay,
+                showTodayHighlight && styles.todayDay
               ]}
               onPress={() => setSelectedDate(date)}
             >
               <Text style={[
                 styles.calendarDayText,
-                isSelected(date) && styles.selectedDayText,
-                isToday(date) && styles.todayDayText
+                isSelectedDate && styles.selectedDayText,
+                showTodayHighlight && styles.todayDayText
               ]}>
                 {dayNumber}
               </Text>
@@ -637,6 +861,27 @@ const HabitTrackerMobile = memo(({
       );
     }
     return days;
+  };
+
+  // Get completed goals count for current month
+  const getCompletedGoalsCount = () => {
+    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    
+    let totalCompletions = 0;
+    goals.forEach(goal => {
+      if (goal.completions && Array.isArray(goal.completions)) {
+        goal.completions.forEach(completion => {
+          const completionDate = new Date(completion.completedAt);
+          // Adjust for timezone offset
+          const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
+          if (localCompletionDate >= startOfMonth && localCompletionDate <= endOfMonth) {
+            totalCompletions++;
+          }
+        });
+      }
+    });
+    return totalCompletions;
   };
 
   return (
@@ -662,6 +907,9 @@ const HabitTrackerMobile = memo(({
                     {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                   </Text>
                   <View style={styles.monthControls}>
+                    <TouchableOpacity onPress={() => changeMonth(-1)}>
+                      <Ionicons name="chevron-back" size={24} color="#9CA3AF" />
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => changeMonth(1)}>
                       <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
                     </TouchableOpacity>
@@ -675,8 +923,8 @@ const HabitTrackerMobile = memo(({
                       <Ionicons name="checkmark" size={20} color="white" />
                     </View>
                     <View style={styles.statContent}>
-                      <Text style={styles.statNumber}>0</Text>
-                      <Text style={styles.statLabel}>day active</Text>
+                      <Text style={styles.statNumber}>{getActiveDaysCount()}</Text>
+                      <Text style={styles.statLabel}>days active</Text>
                     </View>
                   </View>
 
@@ -685,8 +933,8 @@ const HabitTrackerMobile = memo(({
                       <Ionicons name="document-text" size={20} color="white" />
                     </View>
                     <View style={styles.statContent}>
-                      <Text style={styles.statNumber}>0</Text>
-                      <Text style={styles.statLabel}>goal done</Text>
+                      <Text style={styles.statNumber}>{getCompletedGoalsCount()}</Text>
+                      <Text style={styles.statLabel}>goals done</Text>
                     </View>
                   </View>
                 </View>
@@ -703,18 +951,39 @@ const HabitTrackerMobile = memo(({
                   {renderCalendarDays()}
                 </View>
 
-                {/* Today's Goals Section */}
-                <View style={styles.todaySection}>
-                  <Text style={styles.todayHeader}>
-                    {isToday(selectedDate) 
-                      ? "TODAY, " + monthNames[selectedDate.getMonth()].toUpperCase() + " " + selectedDate.getDate()
-                      : monthNames[selectedDate.getMonth()].toUpperCase() + " " + selectedDate.getDate()
-                    }
+                {/* Selected Date Goals */}
+                <View style={styles.selectedDateGoals}>
+                  <Text style={styles.selectedDateTitle}>
+                    {selectedDate.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
                   </Text>
-
-                  <View style={styles.noGoalsContainer}>
-                    <Text style={styles.noGoalsText}>No goals for this day</Text>
-                  </View>
+                  {getGoalsForDate(selectedDate).length > 0 ? (
+                    <View style={styles.goalsList}>
+                      {getGoalsForDate(selectedDate).map(goal => {
+                        const isCompleted = isGoalCompletedOnDate(goal, selectedDate);
+                        return (
+                          <View key={goal.id} style={styles.goalCard}>
+                            <View style={styles.goalContent}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={[
+                                  styles.goalTitle,
+                                  isCompleted && { textDecorationLine: 'line-through', color: '#9CA3AF' }
+                                ]}>{goal.text || goal.title}</Text>
+                              </View>
+                              <Text style={styles.ellipsis}>...</Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyState}>
+                      <Text style={styles.emptyStateText}>No goals for this day</Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </ScrollView>
@@ -723,7 +992,7 @@ const HabitTrackerMobile = memo(({
       </View>
     </Modal>
   );
-});
+})
 
 const EditAreaModal = memo(({ 
   showEditModal, 
@@ -1714,7 +1983,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 20,
-    padding: 16,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -1722,9 +1991,9 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1747,7 +2016,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#111827',
     marginBottom: 2,
@@ -1755,7 +2024,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Cinzel',
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6b7280',
     marginTop: -5,
     alignSelf: 'flex-start',
@@ -1784,14 +2053,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   calendarDay: {
-    width: 40,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 48,
+    height: 64,
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 8,
   },
   selectedDay: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#e5f7ed',
     borderWidth: 2,
     borderColor: '#e5e7eb',
   },
@@ -1805,7 +2074,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Cinzel',
   },
   selectedDayText: {
-    color: '#374151',
+    color: '#10b981',
     fontWeight: '500',
   },
   todayDayText: {
@@ -1813,10 +2082,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#E5E7EB',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: 'transparent',
+    marginTop: 4,
   },
   todaySection: {
     marginTop: 32,
@@ -1954,6 +2226,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    paddingRight: 42,
+    minHeight: 60,
   },
   goalTitle: {
     fontSize: 16,
@@ -1961,11 +2235,25 @@ const styles = StyleSheet.create({
     color: '#374151',
     flex: 1,
     fontFamily: 'Cinzel',
-    marginTop: 10,
+    marginTop: 0,
+    paddingLeft: 20,
+    lineHeight: 24,
+    textAlignVertical: 'center',
   },
   goalRight: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  ellipsis: {
+    fontSize: 28,
+    color: '#6B7280',
+    marginRight: -20,
+    fontFamily: 'Cinzel',
+    fontWeight: 'bold',
+    lineHeight: 28,
+    textAlignVertical: 'center',
+    alignSelf: 'center',
+    marginTop: Platform.OS === 'android' ? -8 : 0,
   },
   energyValue: {
     fontSize: 13,
@@ -2075,5 +2363,26 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     width: 24,
     height: 24,
+  },
+  selectedDateGoals: {
+    marginTop: 32,
+    paddingHorizontal: 16,
+  },
+  selectedDateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 16,
+    marginTop: -30,
+    textAlign: 'center',
+    fontFamily: 'Cinzel',
+  },
+  completedIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }) 

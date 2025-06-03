@@ -235,7 +235,7 @@ export default function GoalScreen({ navigation, route }) {
         });
       }
 
-      // Create the goal document
+      // Create the goal document with new structure
       const goalData = {
         text: goalText,
         startDate: isoDate,
@@ -245,17 +245,20 @@ export default function GoalScreen({ navigation, route }) {
           modifications: {},
           exclusions: []
         } : null,
-        status: 'pending',
+        status: 'active', // Changed from 'pending' to 'active'
         userId: user.uid,
         createdAt: serverTimestamp(),
         areaId: selectedArea ? selectedArea.id : null,
         areaName: selectedArea ? selectedArea.name : null,
         areaColor: selectedArea ? selectedArea.color : null,
         areaEmoji: selectedArea ? selectedArea.emoji : null,
+        completions: [], // New field to track completions
+        lastCompletedAt: null, // New field to track last completion
+        totalCompletions: 0, // New field to track total completions
       };
 
       // Save to Firestore
-      await addDoc(collection(db, 'users', user.uid, 'goals'), goalData);
+      const goalRef = await addDoc(collection(db, 'users', user.uid, 'goals'), goalData);
 
       // Only reset the goal text, keep other selections
       setGoalText('');

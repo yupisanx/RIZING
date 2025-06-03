@@ -19,7 +19,7 @@ const ThreeDButton = ({ onPress, size = 48, completed = false }) => {
         onPress={onPress}
         activeOpacity={0.8}
       >
-        {completed && <Icon name="check" size={size * 0.5} color="#ffffff" />}
+        <Icon name="check" size={size * 0.5} color="#ffffff" />
       </TouchableOpacity>
     </View>
   );

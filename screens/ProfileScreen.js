@@ -11,6 +11,7 @@ import MessageModal from '../components/MessageModal';
 import { theme } from '../utils/theme';
 import * as ImagePicker from 'expo-image-picker';
 import RadarChart from '../components/common/RadarChart';
+import StreakScreen from './StreakScreen';
 
 const SCREEN_PADDING = 20;
 const HEADER_HEIGHT = Platform.select({
@@ -34,6 +35,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState('ABOUT');
   const [profileImage, setProfileImage] = useState(null);
   const isMounted = useRef(true);
+  const [showStreak, setShowStreak] = useState(false);
 
   // Clear any pending timeouts when component unmounts
   useEffect(() => {
@@ -180,171 +182,174 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header Icons */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.menuButton}
-          onPress={() => navigation.navigate('Menu')}
-          accessibilityLabel="Open menu"
-        >
-          <Icons name="menu" size={34} color="#9CA3AF" />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.iconButton}
-          onPress={() => setShowMessageModal(true)}
-          accessibilityLabel="Open messages"
-        >
-          <Icons name="mail" size={34} color="#9CA3AF" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-      >
-        <View style={styles.mainContent}>
-          {/* Main Card */}
-          <View style={[
-            styles.mainCard,
-            activeTab === 'STATS' && styles.mainCardExpanded
-          ]}>
-            <View style={styles.contentContainer}>
-              {/* Image and Title Section */}
-              <View style={styles.headerSection}>
-                <TouchableOpacity 
-                  style={styles.imageContainer}
-                  onPress={handleImagePick}
-                >
-                  {profileImage ? (
-                    <Image 
-                      source={{ uri: profileImage }} 
-                      style={styles.imagePlaceholder}
-                    />
-                  ) : (
-                    <View style={styles.imagePlaceholder}>
-                      <Icons name="camera" size={40} color="#60a5fa" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-                <View style={styles.titleContainer}>
-                  <Text style={styles.profileName}>
-                    {userData?.username || userData?.displayName || 'Loading...'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Info Section */}
-              {activeTab === 'ABOUT' && (
-                <View style={styles.infoContainer}>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>AGE</Text>
-                    <Text style={styles.infoValue}>14 days</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>FRIENDSHIP</Text>
-                    <View style={styles.friendshipContainer}>
-                      <Text style={styles.infoValue}>Pals</Text>
-                      <View style={styles.heartIcon} />
-                    </View>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>HUMAN</Text>
-                    <Text style={[styles.infoValue, styles.unknownText]}>Unknown</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>FRIEND CODE</Text>
-                    <View style={styles.codeContainer}>
-                      <View style={styles.dotsContainer}>
-                        {[...Array(7)].map((_, i) => (
-                          <View key={i} style={[styles.dot, styles.activeDot]} />
-                        ))}
-                        {[...Array(3)].map((_, i) => (
-                          <View key={i + 7} style={[styles.dot]} />
-                        ))}
-                      </View>
-                      <View style={styles.eyeIcon} />
-                    </View>
-                  </View>
-                </View>
-              )}
-              
-              {activeTab === 'STATS' && (
-                <View style={styles.statsContainer}>
-                  <ScrollView 
-                    style={styles.statsScrollView}
-                    contentContainerStyle={styles.statsScrollContent}
-                    showsVerticalScrollIndicator={false}
-                    nestedScrollEnabled={true}
-                    scrollEnabled={true}
-                  >
-                    <RadarChart 
-                      data={{
-                        labels: ['STRENGTH', 'VITALITY', 'AGILITY', 'INTELLIGENCE', 'SENSE'],
-                        datasets: [{
-                          data: [
-                            userData?.stats?.strength || 0,
-                            userData?.stats?.vitality || 0,
-                            userData?.stats?.agility || 0,
-                            userData?.stats?.intelligence || 0,
-                            userData?.stats?.sense || 0
-                          ],
-                        }],
-                      }}
-                      size={280}
-                      color="#87CEEB"
-                    />
-                    <View style={styles.radarBottomSpace} />
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            {/* Bottom Tabs */}
-            <View style={styles.tabsWrapper}>
-              <View style={styles.tabsContainer}>
-                <TouchableOpacity 
-                  style={[styles.tabButton, activeTab === 'ABOUT' && styles.activeTabButton]}
-                  onPress={() => setActiveTab('ABOUT')}
-                >
-                  <Text style={[styles.tabText, activeTab === 'ABOUT' && styles.activeTabText]}>ABOUT</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.tabButton, activeTab === 'STATS' && styles.activeTabButton]}
-                  onPress={() => setActiveTab('STATS')}
-                >
-                  <Text style={[styles.tabText, activeTab === 'STATS' && styles.activeTabText]}>STATS</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          {/* Streak Card */}
-          <TouchableOpacity style={styles.streakCard}>
-            <View style={styles.streakContent}>
-              <View style={styles.streakIconContainer}>
-                <Icons name="star" size={24} color="#FFD700" />
-              </View>
-              <View style={styles.streakTextContainer}>
-                <Text style={styles.streakCount}>{userData?.streak || '0'} day streak</Text>
-                <Text style={styles.streakSubtext}>Longest: {userData?.longestStreak || '0'} days</Text>
-              </View>
-              <Icons name="chevron-right" size={24} color="#8B8B8B" />
-            </View>
+    <>
+      <View style={styles.container}>
+        {/* Header Icons */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.menuButton}
+            onPress={() => navigation.navigate('Menu')}
+            accessibilityLabel="Open menu"
+          >
+            <Icons name="menu" size={34} color="#9CA3AF" />
           </TouchableOpacity>
-          
-          {/* Extra space at bottom */}
-          <View style={{ height: 160 }} />
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={() => setShowMessageModal(true)}
+            accessibilityLabel="Open messages"
+          >
+            <Icons name="mail" size={34} color="#9CA3AF" />
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
+          <View style={styles.mainContent}>
+            {/* Main Card */}
+            <View style={[
+              styles.mainCard,
+              activeTab === 'STATS' && styles.mainCardExpanded
+            ]}>
+              <View style={styles.contentContainer}>
+                {/* Image and Title Section */}
+                <View style={styles.headerSection}>
+                  <TouchableOpacity 
+                    style={styles.imageContainer}
+                    onPress={handleImagePick}
+                  >
+                    {profileImage ? (
+                      <Image 
+                        source={{ uri: profileImage }} 
+                        style={styles.imagePlaceholder}
+                      />
+                    ) : (
+                      <View style={styles.imagePlaceholder}>
+                        <Icons name="camera" size={40} color="#60a5fa" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <View style={styles.titleContainer}>
+                    <Text style={styles.profileName}>
+                      {userData?.username || userData?.displayName || 'Loading...'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Info Section */}
+                {activeTab === 'ABOUT' && (
+                  <View style={styles.infoContainer}>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>AGE</Text>
+                      <Text style={styles.infoValue}>14 days</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>FRIENDSHIP</Text>
+                      <View style={styles.friendshipContainer}>
+                        <Text style={styles.infoValue}>Pals</Text>
+                        <View style={styles.heartIcon} />
+                      </View>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>HUMAN</Text>
+                      <Text style={[styles.infoValue, styles.unknownText]}>Unknown</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>FRIEND CODE</Text>
+                      <View style={styles.codeContainer}>
+                        <View style={styles.dotsContainer}>
+                          {[...Array(7)].map((_, i) => (
+                            <View key={i} style={[styles.dot, styles.activeDot]} />
+                          ))}
+                          {[...Array(3)].map((_, i) => (
+                            <View key={i + 7} style={[styles.dot]} />
+                          ))}
+                        </View>
+                        <View style={styles.eyeIcon} />
+                      </View>
+                    </View>
+                  </View>
+                )}
+                
+                {activeTab === 'STATS' && (
+                  <View style={styles.statsContainer}>
+                    <ScrollView 
+                      style={styles.statsScrollView}
+                      contentContainerStyle={styles.statsScrollContent}
+                      showsVerticalScrollIndicator={false}
+                      nestedScrollEnabled={true}
+                      scrollEnabled={true}
+                    >
+                      <RadarChart 
+                        data={{
+                          labels: ['STRENGTH', 'VITALITY', 'AGILITY', 'INTELLIGENCE', 'SENSE'],
+                          datasets: [{
+                            data: [
+                              userData?.stats?.strength || 0,
+                              userData?.stats?.vitality || 0,
+                              userData?.stats?.agility || 0,
+                              userData?.stats?.intelligence || 0,
+                              userData?.stats?.sense || 0
+                            ],
+                          }],
+                        }}
+                        size={280}
+                        color="#87CEEB"
+                      />
+                      <View style={styles.radarBottomSpace} />
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              {/* Bottom Tabs */}
+              <View style={styles.tabsWrapper}>
+                <View style={styles.tabsContainer}>
+                  <TouchableOpacity 
+                    style={[styles.tabButton, activeTab === 'ABOUT' && styles.activeTabButton]}
+                    onPress={() => setActiveTab('ABOUT')}
+                  >
+                    <Text style={[styles.tabText, activeTab === 'ABOUT' && styles.activeTabText]}>ABOUT</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.tabButton, activeTab === 'STATS' && styles.activeTabButton]}
+                    onPress={() => setActiveTab('STATS')}
+                  >
+                    <Text style={[styles.tabText, activeTab === 'STATS' && styles.activeTabText]}>STATS</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* Streak Card */}
+            <TouchableOpacity style={styles.streakCard} onPress={() => setShowStreak(true)}>
+              <View style={styles.streakContent}>
+                <View style={styles.streakIconContainer}>
+                  <Icons name="star" size={24} color="#FFD700" />
+                </View>
+                <View style={styles.streakTextContainer}>
+                  <Text style={styles.streakCount}>{userData?.streak || '0'} day streak</Text>
+                  <Text style={styles.streakSubtext}>Longest: {userData?.longestStreak || '0'} days</Text>
+                </View>
+                <Icons name="chevron-right" size={24} color="#8B8B8B" />
+              </View>
+            </TouchableOpacity>
+            
+            {/* Extra space at bottom */}
+            <View style={{ height: 160 }} />
+          </View>
+        </ScrollView>
+      </View>
 
       <MessageModal
         visible={showMessageModal}
         onClose={() => setShowMessageModal(false)}
       />
-    </View>
+      <StreakScreen visible={showStreak} onClose={() => setShowStreak(false)} />
+    </>
   );
 }
 
