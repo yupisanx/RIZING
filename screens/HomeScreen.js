@@ -14,6 +14,8 @@ import { db } from '../config/firebase';
 import { collection, query, where, onSnapshot, serverTimestamp, orderBy, deleteDoc, doc, updateDoc, addDoc, increment, arrayUnion } from 'firebase/firestore';
 import { BlurView } from 'expo-blur';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { loadFonts, FONTS } from '../config/fonts';
+import { StyledText } from '../components/StyledText';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_HEIGHT = 40;
@@ -49,17 +51,11 @@ export default function HomeScreen() {
 
   // Effect hooks
   useEffect(() => {
-    async function loadFonts() {
-      try {
-        await Font.loadAsync({
-          'Cinzel': require('../assets/fonts/Cinzel-VariableFont_wght.ttf'),
-        });
-        setFontsLoaded(true);
-      } catch (error) {
-        console.error('Error loading fonts:', error);
-      }
+    async function initializeFonts() {
+      const loaded = await loadFonts();
+      setFontsLoaded(loaded);
     }
-    loadFonts();
+    initializeFonts();
   }, []);
 
   useEffect(() => {
@@ -350,11 +346,11 @@ export default function HomeScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
               <View style={styles.energyIconCol}>
                 <View style={[styles.energyIconMiddle, { transform: [{ scale: 2 }] }]}>
-                  <Text style={styles.energyIconText}>⚡</Text>
+                  <StyledText style={styles.energyIconText}>⚡</StyledText>
                 </View>
               </View>
               <View style={styles.headerRightCol}>
-                <Text style={[styles.title, { marginBottom: 10, fontSize: 16 }]}>Daily Quest</Text>
+                <StyledText style={[styles.title, { marginBottom: 10, fontSize: 16 }]}>Daily Quest</StyledText>
                 <View style={[styles.progressContainer, { marginTop: 5 }]}>
                   <View style={[styles.progressBackground, { width: '98%', alignSelf: 'flex-start', marginLeft: 0 }]}> 
                     <Animated.View style={[
@@ -367,9 +363,9 @@ export default function HomeScreen() {
                         left: '1%'
                       }
                     ]} />
-                    <Text style={styles.progressText}>
+                    <StyledText style={styles.progressText}>
                       {energy} / 15
-                    </Text>
+                    </StyledText>
                   </View>
                 </View>
               </View>
@@ -377,16 +373,16 @@ export default function HomeScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'center', justifyContent: 'space-between', width: '90%' }}>
-          <Text style={styles.goalsLeft}>
+          <StyledText style={styles.goalsLeft}>
             {filteredGoals.length - filteredGoals.filter((goal) => goal.completed).length} goals left for today!
-          </Text>
+          </StyledText>
           <TouchableOpacity onPress={() => navigation.navigate('SelfCareArea')}>
             <MaterialCommunityIcons name="view-grid-plus" size={22} color="#fff" style={{ marginTop: 30 }} />
           </TouchableOpacity>
         </View>
         <View style={[styles.goalsList, { marginTop: 20 }]}>
             {loadingGoals ? (
-              <Text style={{ color: '#fff', textAlign: 'center', marginVertical: 20 }}>Loading goals...</Text>
+              <StyledText style={{ color: '#fff', textAlign: 'center', marginVertical: 20 }}>Loading goals...</StyledText>
           ) : filteredGoals.length === 0 ? (
             null
             ) : (
@@ -401,10 +397,10 @@ export default function HomeScreen() {
                         <MaterialIcons name="more-vert" size={24} color="#fff" />
                       </TouchableOpacity>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.goalTitle, { fontFamily: 'Cinzel', marginTop: 10 }]}>{goal.text || goal.title}</Text>
+                        <StyledText style={[styles.goalTitle, { marginTop: 10 }]}>{goal.text || goal.title}</StyledText>
                       </View>
                       <View style={styles.goalRight}>
-                        <Text style={[styles.energyValue, { fontFamily: 'Cinzel' }]}>5⚡</Text>
+                        <StyledText style={styles.energyValue}>5⚡</StyledText>
                         <ThreeDButton
                           onPress={() => handleCompleteGoal(goal.id)}
                           size={42}
@@ -425,20 +421,20 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.editModalEditButton, { alignSelf: 'flex-end', marginRight: 0 }]}>
                             <MaterialIcons name="edit" size={30} color="#FBBF24" />
-                            <Text style={styles.editModalEditText}>Edit</Text>
+                            <StyledText style={styles.editModalEditText}>Edit</StyledText>
                           </TouchableOpacity>
                           <View style={styles.editModalCard}>
-                            <Text style={[styles.editModalGoalTitle, { textAlign: 'center' }]}>{goal.text || goal.title}</Text>
+                            <StyledText style={[styles.editModalGoalTitle, { textAlign: 'center' }]}>{goal.text || goal.title}</StyledText>
                           </View>
                           <View style={styles.editModalActionsRow}>
-                          <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialCommunityIcons name="skip-forward" size={32} color="#a78bfa" /><Text style={styles.editModalActionText}>Skip</Text></TouchableOpacity>
+                          <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialCommunityIcons name="skip-forward" size={32} color="#a78bfa" /><StyledText style={styles.editModalActionText}>Skip</StyledText></TouchableOpacity>
                             <TouchableOpacity style={styles.editModalAction}>
                               <View style={styles.editModalActionIconBg}>
                                 <MaterialIcons name="check" size={42} color="#22C55E" />
                               </View>
-                              <Text style={styles.editModalActionText}>Complete</Text>
+                              <StyledText style={styles.editModalActionText}>Complete</StyledText>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialIcons name="calendar-today" size={32} color="#F87171" /><Text style={styles.editModalActionText}>Snooze</Text></TouchableOpacity>
+                            <TouchableOpacity style={[styles.editModalAction, {marginTop: 20}]}><MaterialIcons name="calendar-today" size={32} color="#F87171" /><StyledText style={styles.editModalActionText}>Snooze</StyledText></TouchableOpacity>
                           </View>
                           <TouchableOpacity style={[styles.editModalClose, styles.editModalCloseCircle]} onPress={() => setEditGoalId(null)}>
                             <MaterialIcons name="close" size={22} color="#222" />
@@ -459,15 +455,14 @@ export default function HomeScreen() {
             >
               <View style={styles.addGoalContent}>
                 <MaterialIcons name="add" size={24} color="white" />
-                <Text style={[styles.addGoalText, { fontFamily: 'Cinzel' }]}>Add a goal</Text>
+                <StyledText style={styles.addGoalText}>Add a goal</StyledText>
               </View>
             </TouchableOpacity>
           </View>
         )}
         {isAddingGoal && (
             <View style={styles.addGoalContainer}>
-              <TextInput
-                style={[styles.input, { fontFamily: 'Cinzel' }]}
+              <StyledText style={styles.input}
                 value={newGoalTitle}
                 onChangeText={setNewGoalTitle}
                 placeholder="Enter goal title"
@@ -475,7 +470,7 @@ export default function HomeScreen() {
                 onSubmitEditing={addGoal}
               />
               <TouchableOpacity style={styles.addButton} onPress={addGoal}>
-                <Text style={[styles.addButtonText, { fontFamily: 'Cinzel' }]}>Add</Text>
+                <StyledText style={styles.addButtonText}>Add</StyledText>
               </TouchableOpacity>
             </View>
           )}
@@ -527,8 +522,7 @@ const styles = StyleSheet.create({
   text: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -912,18 +906,16 @@ const styles = StyleSheet.create({
   },
   energyIconText: {
     fontSize: 14,
-    fontWeight: 'bold',
     color: '#60a5fa',
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   title: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   progressContainer: {
-    marginBottom: 12,
+    marginBottom: 12
   },
   progressBackground: {
     backgroundColor: '#E5E7EB',
@@ -931,24 +923,23 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'android' ? 22 : 18,
     justifyContent: 'center',
     overflow: 'hidden',
-    width: '80%',
+    width: '80%'
   },
   progressFill: {
     position: 'absolute',
-    backgroundColor: '#60a5fa',
+    backgroundColor: '#60a5fa'
   },
   progressText: {
     textAlign: 'center',
-    fontWeight: 'bold',
     color: '#000000',
     fontSize: 10,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzel,
   },
   subtitle: {
     color: '#ffffff',
     textAlign: 'center',
     fontSize: 10,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzel,
   },
   bold: {
     fontWeight: 'bold',
@@ -957,18 +948,17 @@ const styles = StyleSheet.create({
   goalsLeft: {
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: 'bold',
     marginBottom: 16,
     marginTop: 50,
     marginLeft: 0,
     alignSelf: 'center',
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   goalsList: {
     width: '90%',
     marginBottom: 16,
     marginTop: 5,
-    marginLeft: 20,
+    marginLeft: 20
   },
   goalCard: {
     backgroundColor: '#1F1F1F',
@@ -981,31 +971,30 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 0.3,
     borderColor: '#9CA3AF',
-    width: '100%',
+    width: '100%'
   },
   goalContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 16
   },
   goalTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#ffffff',
     flex: 1,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
+    marginTop: 10,
   },
   goalRight: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   energyValue: {
     fontSize: 13,
-    fontWeight: 'bold',
     color: '#60a5fa',
     marginRight: 12,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   addGoalContainer: {
     flexDirection: 'row',
@@ -1020,7 +1009,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginRight: 8,
     color: '#ffffff',
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzel,
   },
   addButton: {
     backgroundColor: '#2A2A2A',
@@ -1031,9 +1020,8 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#ffffff',
-    fontWeight: 'bold',
     fontSize: 10,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   addGoalButtonContainer: {
     width: '100%',
@@ -1056,9 +1044,8 @@ const styles = StyleSheet.create({
   addGoalText: {
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: 'bold',
     marginLeft: 8,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   placeholderText: {
     fontFamily: 'Cinzel',
@@ -1076,9 +1063,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
     color: '#ffffff',
     marginLeft: 10,
+    ...FONTS.cinzelBold,
   },
   threeDotButton: {
     marginRight: 12,
@@ -1109,9 +1096,8 @@ const styles = StyleSheet.create({
   },
   editModalEditText: {
     color: '#FBBF24',
-    fontWeight: 'bold',
     marginLeft: 6,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   editModalCard: {
     backgroundColor: '#fff',
@@ -1125,15 +1111,14 @@ const styles = StyleSheet.create({
   },
   editModalGoalTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
     color: '#000',
     marginBottom: 8,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzelBold,
   },
   editModalGoalSub: {
     color: '#666',
     fontSize: 14,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzel,
   },
   editModalActionsRow: {
     flexDirection: 'row',
@@ -1149,7 +1134,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginTop: 4,
     fontSize: 14,
-    fontFamily: 'Cinzel',
+    ...FONTS.cinzel,
   },
   editModalClose: {
     marginTop: 12,
