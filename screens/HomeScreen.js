@@ -166,42 +166,63 @@ export default function HomeScreen() {
   today.setHours(0,0,0,0);
 
   const filteredGoals = goals.filter(goal => {
-    // Don't show completed or archived goals
-    if (goal.completed || goal.archived) return false;
-    
+    // First check if goal is archived
+    if (goal.archived) return false;
+
+    // Check if goal was completed today
+    if (goal.completions && Array.isArray(goal.completions)) {
+      const hasCompletionToday = goal.completions.some(completion => {
+        const completionDate = new Date(completion.completedAt);
+        // Adjust for timezone offset
+        const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
+        return isSameDay(localCompletionDate, today);
+      });
+      // If completed today, don't show it
+      if (hasCompletionToday) return false;
+    }
+
+    // Get goal's start date
     const goalDate = parseLocalDate(goal.startDate);
-    // If the goal hasn't started yet, don't show it
-    if (today < goalDate) return false;
+    // Adjust for timezone offset
+    const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
+    const goalDateStart = new Date(localGoalDate.getFullYear(), localGoalDate.getMonth(), localGoalDate.getDate());
     
-    // If the goal doesn't repeat, only show it on its start date
-    if (!goal.repeat) {
-      return isSameDay(today, goalDate);
+    // For future dates, check if today is before goal's start date
+    if (today < goalDateStart) {
+      return false;
     }
     
-    const pattern = goal.repeat.pattern;
-    const exclusions = goal.repeat.exclusions || [];
-    const todayStr = today.toISOString().split('T')[0];
-    // If today is excluded, don't show the goal
-    if (exclusions.includes(todayStr)) return false;
-    
-    // Check if today matches the recurrence pattern
-    switch (pattern.frequency) {
-      case 'DAILY':
-        return true;
-      case 'WEEKLY':
-        if (pattern.byDay) {
-          const dayStr = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][today.getDay()];
-          return pattern.byDay.includes(dayStr);
-        }
-        return true;
-      case 'MONTHLY':
-        if (pattern.byMonthDay) {
-          return pattern.byMonthDay.includes(today.getDate().toString());
-        }
-        return true;
-      default:
-        return false;
+    // For repeating goals, check if today matches the pattern
+    if (goal.repeat) {
+      const pattern = goal.repeat.pattern;
+      const exclusions = goal.repeat.exclusions || [];
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // If today is excluded, don't show the goal
+      if (exclusions.includes(todayStr)) return false;
+      
+      // Check if today matches the recurrence pattern
+      switch (pattern.frequency) {
+        case 'DAILY':
+          return true;
+        case 'WEEKLY':
+          if (pattern.byDay) {
+            const dayStr = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][today.getDay()];
+            return pattern.byDay.includes(dayStr);
+          }
+          return true;
+        case 'MONTHLY':
+          if (pattern.byMonthDay) {
+            return pattern.byMonthDay.includes(today.getDate().toString());
+          }
+          return true;
+        default:
+          return false;
+      }
     }
+    
+    // For non-repeating goals, only show on their start date
+    return isSameDay(today, goalDateStart);
   });
 
   // Delete goal with confirmation
@@ -235,63 +256,41 @@ export default function HomeScreen() {
       toValue: 0,
       duration: 400,
       useNativeDriver: true,
-    }).start(async () => {
-      try {
-        const now = new Date();
-        const completionData = {
-          completedAt: now.toISOString(),
-          notes: '',
-          energy: 5,
-        };
+    }).start();
+    
+    try {
+      const now = new Date();
+      const completionData = {
+        completedAt: now.toISOString(),
+        notes: '',
+        energy: 5,
+      };
 
-        // Update the goal document with new completion
-        const goalRef = doc(db, 'users', user.uid, 'goals', goalId);
-        
-        if (!goal.repeat) {
-          // For non-repeating goals, just mark as completed
-          await updateDoc(goalRef, {
-            status: 'completed',
-            lastCompletedAt: now.toISOString(),
-            totalCompletions: increment(1),
-            completions: arrayUnion(completionData),
-          });
-        } else {
-          // For repeating goals, update the current instance and create next if needed
-          const nextDate = new Date();
-          
-          // Calculate next occurrence based on repeat pattern
-          if (goal.repeat.pattern.frequency === 'DAILY') {
-            nextDate.setDate(nextDate.getDate() + 1);
-          } else if (goal.repeat.pattern.frequency === 'WEEKLY') {
-            nextDate.setDate(nextDate.getDate() + 7);
-          } else if (goal.repeat.pattern.frequency === 'MONTHLY') {
-            nextDate.setMonth(nextDate.getMonth() + 1);
-          }
+      // Update the goal document with new completion
+      const goalRef = doc(db, 'users', user.uid, 'goals', goalId);
+      
+      // For both repeating and non-repeating goals, just update completion data
+      await updateDoc(goalRef, {
+        status: 'completed',
+        lastCompletedAt: now.toISOString(),
+        totalCompletions: increment(1),
+        completions: arrayUnion(completionData),
+      });
 
-          // Update current goal with completion
-          await updateDoc(goalRef, {
-            lastCompletedAt: now.toISOString(),
-            totalCompletions: increment(1),
-            completions: arrayUnion(completionData),
-            startDate: nextDate.toISOString().split('T')[0], // Update start date for next occurrence
-          });
-        }
-
-        // Animate energy and progress bar
-        setEnergy(e => Math.min(e + 5, 15));
-        
-        // Show confetti
-        setShowConfetti(true);
-        
-        // Hide confetti after animation
-        setTimeout(() => {
-          setShowConfetti(false);
-        }, 1800);
-      } catch (error) {
-        console.error('Error completing goal:', error);
-        Alert.alert('Error', 'Failed to complete goal. Please try again.');
-      }
-    });
+      // Animate energy and progress bar
+      setEnergy(e => Math.min(e + 5, 15));
+      
+      // Show confetti
+      setShowConfetti(true);
+      
+      // Hide confetti after animation
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 1800);
+    } catch (error) {
+      console.error('Error completing goal:', error);
+      Alert.alert('Error', 'Failed to complete goal.');
+    }
   };
 
   return (

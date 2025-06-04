@@ -16,6 +16,7 @@ import SelfCareAreaScreen from '../screens/SelfCareAreaScreen';
 import { SelfCareAreaProvider } from '../contexts/SelfCareAreaContext';
 import { GoalsProvider } from '../contexts/GoalsContext';
 import PreGoalScreen from '../screens/PreGoalScreen';
+import PhantomStartScreen from '../screens/PhantomStartScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -109,6 +110,14 @@ export default function AppNavigator() {
                   name="PreGoalScreen" 
                   component={PreGoalScreen}
                   options={{
+                    animation: 'slide_from_right',
+                  }}
+                />
+                <Stack.Screen 
+                  name="PhantomStart" 
+                  component={PhantomStartScreen}
+                  options={{
+                    headerShown: false,
                     animation: 'slide_from_right',
                   }}
                 />

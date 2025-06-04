@@ -205,12 +205,14 @@ const DetailScreen = memo(({
   selectedArea, 
   setCurrentView, 
   setShowOptionsSheet,
-  setShowCalendarModal 
+  setShowCalendarModal,
+  showCalendarModal 
 }: { 
   selectedArea: SelfCareArea | null
   setCurrentView: (view: "main" | "detail") => void
   setShowOptionsSheet: (show: boolean) => void
   setShowCalendarModal: (show: boolean) => void
+  showCalendarModal: boolean
 }) => {
   const navigation = useNavigation<NavigationProp>()
   const { goals, isLoadingGoals, refreshGoals, setGoals } = useGoals();
@@ -262,12 +264,14 @@ const DetailScreen = memo(({
           lastCompletedAt: now.toISOString(),
           totalCompletions: increment(1),
           completions: arrayUnion(completionData),
+          // Don't update startDate, keep the original
         });
       } else {
         // Mark as active again
         await updateDoc(goalRef, {
           status: 'active',
           lastCompletedAt: null,
+          // Don't update startDate, keep the original
         });
       }
 
@@ -282,6 +286,8 @@ const DetailScreen = memo(({
               completions: g.status === 'active' 
                 ? [...(g.completions || []), completionData]
                 : g.completions,
+              // Keep the original startDate
+              startDate: g.startDate
             }
           : g
       ));
@@ -321,7 +327,19 @@ const DetailScreen = memo(({
     const selectedDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
 
     return goals.filter(goal => {
-      // For completed goals, check completions array
+      // First filter by area
+      if (selectedArea && goal.areaId !== selectedArea.id) {
+        return false;
+      }
+
+      // Get goal's start date
+      const goalDate = new Date(goal.startDate);
+      // Adjust for timezone offset
+      const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
+      const goalDateStart = new Date(localGoalDate.getFullYear(), localGoalDate.getMonth(), localGoalDate.getDate());
+
+      // For completed goals, check completions array FIRST
+      // This ensures we can see completion history regardless of start date
       if (goal.completions && Array.isArray(goal.completions)) {
         const hasCompletion = goal.completions.some(completion => {
           const completionDate = new Date(completion.completedAt);
@@ -332,11 +350,41 @@ const DetailScreen = memo(({
         if (hasCompletion) return true;
       }
       
-      // For uncompleted goals, check if they exist on this date
-      const goalDate = new Date(goal.startDate);
-      // Adjust for timezone offset
-      const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
-      const goalDateStart = new Date(localGoalDate.getFullYear(), localGoalDate.getMonth(), localGoalDate.getDate());
+      // For future dates, check if the selected date is before goal's start date
+      if (selectedDateStart < goalDateStart) {
+        return false;
+      }
+      
+      // For repeating goals, check if the selected date matches the pattern
+      if (goal.repeat) {
+        const pattern = goal.repeat.pattern;
+        const exclusions = goal.repeat.exclusions || [];
+        const dateStr = selectedDateStart.toISOString().split('T')[0];
+        
+        // If date is excluded, don't show the goal
+        if (exclusions.includes(dateStr)) return false;
+        
+        // Check if date matches the recurrence pattern
+        switch (pattern.frequency) {
+          case 'DAILY':
+            return true;
+          case 'WEEKLY':
+            if (pattern.byDay) {
+              const dayStr = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][selectedDateStart.getDay()];
+              return pattern.byDay.includes(dayStr);
+            }
+            return true;
+          case 'MONTHLY':
+            if (pattern.byMonthDay) {
+              return pattern.byMonthDay.includes(selectedDateStart.getDate().toString());
+            }
+            return true;
+          default:
+            return false;
+        }
+      }
+      
+      // For non-repeating goals, only show on their start date
       return goalDateStart.getTime() === selectedDateStart.getTime();
     });
   };
@@ -500,6 +548,12 @@ const DetailScreen = memo(({
           </View>
         </ScrollView>
       </View>
+      <HabitTrackerMobile
+        showCalendarModal={showCalendarModal}
+        setShowCalendarModal={setShowCalendarModal}
+        isFromSeeAll={true}
+        selectedArea={selectedArea}
+      />
     </SafeAreaView>
   );
 })
@@ -629,11 +683,13 @@ const NewAreaModal = memo(({
 const HabitTrackerMobile = memo(({ 
   showCalendarModal, 
   setShowCalendarModal,
-  isFromSeeAll = false
+  isFromSeeAll = false,
+  selectedArea
 }: { 
   showCalendarModal: boolean
   setShowCalendarModal: (show: boolean) => void
   isFromSeeAll?: boolean
+  selectedArea: SelfCareArea | null
 }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -721,7 +777,19 @@ const HabitTrackerMobile = memo(({
     const selectedDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
 
     return goals.filter(goal => {
-      // For completed goals, check completions array
+      // First filter by area
+      if (selectedArea && goal.areaId !== selectedArea.id) {
+        return false;
+      }
+
+      // Get goal's start date
+      const goalDate = new Date(goal.startDate);
+      // Adjust for timezone offset
+      const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
+      const goalDateStart = new Date(localGoalDate.getFullYear(), localGoalDate.getMonth(), localGoalDate.getDate());
+
+      // For completed goals, check completions array FIRST
+      // This ensures we can see completion history regardless of start date
       if (goal.completions && Array.isArray(goal.completions)) {
         const hasCompletion = goal.completions.some(completion => {
           const completionDate = new Date(completion.completedAt);
@@ -732,11 +800,41 @@ const HabitTrackerMobile = memo(({
         if (hasCompletion) return true;
       }
       
-      // For uncompleted goals, check if they exist on this date
-      const goalDate = new Date(goal.startDate);
-      // Adjust for timezone offset
-      const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
-      const goalDateStart = new Date(localGoalDate.getFullYear(), localGoalDate.getMonth(), localGoalDate.getDate());
+      // For future dates, check if the selected date is before goal's start date
+      if (selectedDateStart < goalDateStart) {
+        return false;
+      }
+      
+      // For repeating goals, check if the selected date matches the pattern
+      if (goal.repeat) {
+        const pattern = goal.repeat.pattern;
+        const exclusions = goal.repeat.exclusions || [];
+        const dateStr = selectedDateStart.toISOString().split('T')[0];
+        
+        // If date is excluded, don't show the goal
+        if (exclusions.includes(dateStr)) return false;
+        
+        // Check if date matches the recurrence pattern
+        switch (pattern.frequency) {
+          case 'DAILY':
+            return true;
+          case 'WEEKLY':
+            if (pattern.byDay) {
+              const dayStr = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][selectedDateStart.getDay()];
+              return pattern.byDay.includes(dayStr);
+            }
+            return true;
+          case 'MONTHLY':
+            if (pattern.byMonthDay) {
+              return pattern.byMonthDay.includes(selectedDateStart.getDate().toString());
+            }
+            return true;
+          default:
+            return false;
+        }
+      }
+      
+      // For non-repeating goals, only show on their start date
       return goalDateStart.getTime() === selectedDateStart.getTime();
     });
   };
@@ -1354,6 +1452,7 @@ export default function SelfCareAreaScreen() {
           setCurrentView={setCurrentView}
           setShowOptionsSheet={setShowOptionsSheet}
           setShowCalendarModal={setShowCalendarModal}
+          showCalendarModal={showCalendarModal}
         />
       )}
       <AreaSelectionModal 
@@ -1374,6 +1473,7 @@ export default function SelfCareAreaScreen() {
         showCalendarModal={showCalendarModal}
         setShowCalendarModal={setShowCalendarModal}
         isFromSeeAll={true}
+        selectedArea={selectedArea}
       />
       <OptionsSheet 
         showOptionsSheet={showOptionsSheet}

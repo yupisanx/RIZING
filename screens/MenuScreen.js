@@ -6,6 +6,7 @@ import Icon from "react-native-vector-icons/Feather";
 import MaterialIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import PhantomStartScreen from './PhantomStartScreen';
 
 export default function MenuScreen() {
   const navigation = useNavigation();
@@ -74,7 +75,11 @@ export default function MenuScreen() {
           {/* Row 2 */}
           <View style={styles.gridRow}>
             {/* Insights */}
-            <TouchableOpacity style={styles.gridCard} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.gridCard}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('PhantomStart')}
+            >
               <View style={styles.iconContainer}>
                 <View style={styles.insightsIconBg}>
                   <View style={styles.insightsBarContainer}>
