@@ -10,6 +10,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import QuestScreen from '../screens/QuestScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import * as Haptics from 'expo-haptics';
 
 const Tab = createBottomTabNavigator();
 
@@ -91,6 +92,11 @@ export default function TabNavigator() {
           headerShown: false,
           contentStyle: {
             paddingBottom: Platform.OS === 'android' ? 80 : 90,
+          },
+        }}
+        screenListeners={{
+          tabPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           },
         }}
       >

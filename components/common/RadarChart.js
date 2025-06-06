@@ -17,20 +17,56 @@ const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
+// Maximum number of data points we'll support
+const MAX_DATA_POINTS = 10;
+
 const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
   const PADDING = 45;
   const center = size / 2;
   const radius = (size - (PADDING * 2)) / 2;
   const angleStep = (2 * Math.PI) / data.labels.length;
   
-  // Animation values
+  // Initialize all shared values at the top level with fixed number
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
   const pulseScale = useSharedValue(1);
-  const labelOpacities = data.labels.map(() => useSharedValue(0));
-  const valueOpacities = data.labels.map(() => useSharedValue(0));
+  
+  // Create fixed number of shared values
+  const labelOpacities = [
+    useSharedValue(0), useSharedValue(0), useSharedValue(0),
+    useSharedValue(0), useSharedValue(0), useSharedValue(0),
+    useSharedValue(0), useSharedValue(0), useSharedValue(0),
+    useSharedValue(0)
+  ];
+  
+  const valueOpacities = [
+    useSharedValue(0), useSharedValue(0), useSharedValue(0),
+    useSharedValue(0), useSharedValue(0), useSharedValue(0),
+    useSharedValue(0), useSharedValue(0), useSharedValue(0),
+    useSharedValue(0)
+  ];
 
+  // Animation props
+  const animatedProps = useAnimatedProps(() => ({
+    transform: [
+      { scale: scale.value }
+    ],
+    opacity: opacity.value
+  }));
+
+  const pulseProps = useAnimatedProps(() => ({
+    transform: [{ scale: pulseScale.value }]
+  }));
+
+  // Effect hook for animations
   useEffect(() => {
+    // Reset all values first
+    scale.value = 0;
+    opacity.value = 0;
+    pulseScale.value = 1;
+    labelOpacities.forEach(opacity => opacity.value = 0);
+    valueOpacities.forEach(opacity => opacity.value = 0);
+
     // Entrance animation
     scale.value = withSpring(1, { damping: 15 });
     opacity.value = withTiming(1, { duration: 800 });
@@ -45,8 +81,8 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
       true
     );
 
-    // Staggered label animations
-    data.labels.forEach((_, index) => {
+    // Staggered label animations - only animate up to the number of labels we have
+    data.labels.slice(0, MAX_DATA_POINTS).forEach((_, index) => {
       labelOpacities[index].value = withDelay(
         index * 200,
         withTiming(1, { duration: 500 })
@@ -56,7 +92,16 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
         withTiming(1, { duration: 500 })
       );
     });
-  }, []);
+
+    // Cleanup function
+    return () => {
+      scale.value = 0;
+      opacity.value = 0;
+      pulseScale.value = 1;
+      labelOpacities.forEach(opacity => opacity.value = 0);
+      valueOpacities.forEach(opacity => opacity.value = 0);
+    };
+  }, [data.labels]);
 
   const getPoints = (values, radius) => {
     return values.map((value, index) => {
@@ -65,16 +110,6 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
       const distance = radius * normalizedValue;
       const x = center + distance * Math.cos(angle);
       const y = center + distance * Math.sin(angle);
-      return `${x},${y}`;
-    }).join(' ');
-  };
-
-  const getGridPoints = (level) => {
-    const gridRadius = (radius * level) / 5;
-    return data.labels.map((_, index) => {
-      const angle = index * angleStep - Math.PI / 2;
-      const x = center + gridRadius * Math.cos(angle);
-      const y = center + gridRadius * Math.sin(angle);
       return `${x},${y}`;
     }).join(' ');
   };
@@ -115,30 +150,22 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
     };
   };
 
-  const animatedProps = useAnimatedProps(() => ({
-    transform: [
-      { scale: scale.value }
-    ],
-    opacity: opacity.value
-  }));
-
-  const pulseProps = useAnimatedProps(() => ({
-    transform: [{ scale: pulseScale.value }]
-  }));
-
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.svgContainer, animatedProps]}>
         <Svg width={size} height={size}>
-          {/* Background grid */}
+          {/* Background grid - circular rings */}
           {[1, 2, 3, 4, 5].map((level) => (
-            <AnimatedPolygon
-              key={`grid-${level}`}
-              points={getGridPoints(level)}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.1)"
-              strokeWidth="1"
-            />
+            <React.Fragment key={`grid-${level}`}>
+              <AnimatedCircle
+                cx={center}
+                cy={center}
+                r={(radius * level) / 5}
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.1)"
+                strokeWidth="1"
+              />
+            </React.Fragment>
           ))}
 
           {/* Axis lines */}
@@ -206,7 +233,7 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
                     }
                   ]}
                 >
-                  {data.datasets[0].data[index]}
+                  {`${data.datasets[0].data[index]}/10`}
                 </Animated.Text>
               </React.Fragment>
             );
@@ -238,6 +265,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Cinzel',
     textAlign: 'center',
     width: 40,
+  },
+  ringLabel: {
+    fontSize: 12,
+    fontFamily: 'Cinzel',
+    textAlign: 'center',
+    width: 20,
   },
 });
 

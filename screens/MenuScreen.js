@@ -6,7 +6,8 @@ import Icon from "react-native-vector-icons/Feather";
 import MaterialIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import PhantomStartScreen from './PhantomStartScreen';
+import StartScreenn from './StartScreenn';
+import * as Haptics from 'expo-haptics';
 
 export default function MenuScreen() {
   const navigation = useNavigation();
@@ -27,7 +28,7 @@ export default function MenuScreen() {
         <TouchableOpacity 
           style={styles.backButton} 
           activeOpacity={0.7} 
-          onPress={() => navigation.goBack()}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }}
         >
           <Icon name="chevron-left" size={48} color="#6B7280" />
         </TouchableOpacity>
@@ -42,7 +43,7 @@ export default function MenuScreen() {
             <TouchableOpacity 
               style={styles.gridCard} 
               activeOpacity={0.7}
-              onPress={() => navigation.navigate('SelfCareArea')}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('SelfCareArea'); }}
             >
               <View style={styles.selfCareIconContainer}>
                 <View style={styles.selfCareRow}>
@@ -61,7 +62,7 @@ export default function MenuScreen() {
             <TouchableOpacity 
               style={styles.gridCard} 
               activeOpacity={0.7}
-              onPress={() => navigation.navigate('PreGoalScreen')}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('PreGoalScreen'); }}
             >
               <View style={styles.iconContainer}>
                 <View style={styles.goalsIconBg}>
@@ -78,7 +79,7 @@ export default function MenuScreen() {
             <TouchableOpacity
               style={styles.gridCard}
               activeOpacity={0.7}
-              onPress={() => navigation.navigate('PhantomStart')}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('StartScreenn'); }}
             >
               <View style={styles.iconContainer}>
                 <View style={styles.insightsIconBg}>
@@ -93,7 +94,7 @@ export default function MenuScreen() {
             </TouchableOpacity>
 
             {/* Newsletters */}
-            <TouchableOpacity style={styles.gridCard} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.gridCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
               <View style={styles.iconContainer}>
                 <View style={styles.newslettersIconBg}>
                   <View style={styles.newslettersLineContainer}>
@@ -108,7 +109,7 @@ export default function MenuScreen() {
           </View>
 
           {/* History */}
-          <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.7} onPress={() => navigation.navigate('PreGoalScreen')}>
+          <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('PreGoalScreen'); }}>
             <View style={styles.iconContainer}>
               <View style={styles.historyIconBg}>
                 <View style={styles.historyIconCalendar}>
@@ -122,7 +123,7 @@ export default function MenuScreen() {
         </View>
 
         {/* Submit feedback */}
-        <TouchableOpacity style={styles.menuCard} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.menuCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
           <View style={styles.menuCardContent}>
             <View style={styles.menuCardLeft}>
               <View style={styles.iconContainer}>
@@ -141,7 +142,7 @@ export default function MenuScreen() {
         <Text style={styles.sectionHeader}>ACCOUNT</Text>
         <View style={styles.sectionCard}>
           {/* Notifications */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
             <View style={styles.menuItemLeft}>
               <View style={styles.iconContainer}>
                 <Icon name="bell" size={22} color="#F59E0B" />
@@ -154,7 +155,7 @@ export default function MenuScreen() {
           <View style={styles.separator} />
 
           {/* Profile */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
             <View style={styles.menuItemLeft}>
               <View style={styles.profileIconBg}>
                 <Text style={styles.profileIconText}>:)</Text>
@@ -167,7 +168,7 @@ export default function MenuScreen() {
           <View style={styles.separator} />
 
           {/* Preferences */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
             <View style={styles.menuItemLeft}>
               <View style={styles.iconContainer}>
                 <MaterialIcon name="view-grid" size={22} color="#3B82F6" />
@@ -180,7 +181,7 @@ export default function MenuScreen() {
           <View style={styles.separator} />
 
           {/* Your data */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
             <View style={styles.menuItemLeft}>
               <View style={styles.iconContainer}>
                 <MaterialIcon name="file-document" size={22} color="#A78BFA" />
@@ -195,10 +196,10 @@ export default function MenuScreen() {
         <Text style={styles.sectionHeader}>SUPPORT</Text>
         <View style={styles.sectionCard}>
           {/* Help center */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
             <View style={styles.menuItemLeft}>
               <View style={styles.helpIconBg}>
-                <Icon name="help-circle" size={20} color="#FFFFFF" />
+                <Icon name="help-circle" size={22} color="#60A5FA" />
               </View>
               <Text style={styles.menuItemText}>Help center</Text>
             </View>
@@ -208,7 +209,7 @@ export default function MenuScreen() {
           <View style={styles.separator} />
 
           {/* About */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
             <View style={styles.menuItemLeft}>
               <View style={styles.aboutIconBg}>
                 <MaterialIcon name="file-document-outline" size={20} color="#10B981" />
@@ -221,7 +222,7 @@ export default function MenuScreen() {
           <View style={styles.separator} />
 
           {/* Report issue */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
             <View style={styles.menuItemLeft}>
               <View style={styles.reportIconBg}>
                 <MaterialIcon name="message-outline" size={20} color="#F87171" />

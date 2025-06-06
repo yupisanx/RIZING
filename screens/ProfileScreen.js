@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Image, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useMenu } from '../contexts/MenuContext';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { doc, onSnapshot, updateDoc, getDocs, collection, query, where, Timestamp } from 'firebase/firestore';
+import { db, auth } from '../config/firebase';
 import { Icons } from '../components/Icons';
 import { useNavigation } from '@react-navigation/native';
 import MessageModal from '../components/MessageModal';
@@ -12,6 +12,8 @@ import { theme } from '../utils/theme';
 import * as ImagePicker from 'expo-image-picker';
 import RadarChart from '../components/common/RadarChart';
 import StreakScreen from './StreakScreen';
+import * as Haptics from 'expo-haptics';
+import { useSelfCareAreas } from '../contexts/SelfCareAreaContext';
 
 const SCREEN_PADDING = 20;
 const HEADER_HEIGHT = Platform.select({
@@ -28,6 +30,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const { toggleMenu, logout } = useMenu();
   const { user } = useAuth();
+  const { userAreas } = useSelfCareAreas();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,6 +39,7 @@ export default function ProfileScreen() {
   const [profileImage, setProfileImage] = useState(null);
   const isMounted = useRef(true);
   const [showStreak, setShowStreak] = useState(false);
+  const [areaScores, setAreaScores] = useState({});
 
   // Clear any pending timeouts when component unmounts
   useEffect(() => {
@@ -44,53 +48,171 @@ export default function ProfileScreen() {
     };
   }, []);
 
+  // Set up real-time listener for user data
   useEffect(() => {
-    let isSubscribed = true;
-    let unsubscribe;
+    if (!user) {
+      console.log('No user found in ProfileScreen');
+      return;
+    }
 
-    const setupRealtimeUpdates = async () => {
-      if (!user?.uid) return;
-
-      try {
-        setError(null);
-        // Set up real-time listener
-        unsubscribe = onSnapshot(doc(db, 'users', user.uid), 
-          (doc) => {
-            if (!isSubscribed) return;
-            
+    console.log('Setting up real-time listener for user data');
+    const userRef = doc(db, 'users', user.uid);
+    
+    const unsubscribe = onSnapshot(userRef, (doc) => {
+      console.log('Received user data update');
             if (doc.exists()) {
-              const data = doc.data();
-              console.log('User data from Firebase:', data); // Debug log
-              setUserData(data);
-            } else {
-              console.log('No user document found'); // Debug log
-              setError('User data not found');
+        setUserData(doc.data());
             }
             setLoading(false);
-          },
-          (error) => {
-            if (!isSubscribed) return;
-            console.error('Error in real-time updates:', error);
-            setError('Failed to load user data');
+    }, (error) => {
+      console.error('Error in user data listener:', error);
             setLoading(false);
-          }
-        );
-      } catch (error) {
-        if (!isSubscribed) return;
-        console.error('Error setting up real-time updates:', error);
-        setError('Failed to load user data');
-        setLoading(false);
-      }
-    };
+    });
 
-    setupRealtimeUpdates();
     return () => {
-      isSubscribed = false;
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      console.log('Cleaning up user data listener');
+      unsubscribe();
     };
-  }, [user?.uid]);
+  }, [user]);
+
+  // Calculate 7-day scores for each area
+  useEffect(() => {
+    if (!user) {
+      console.log('No user found');
+      return;
+    }
+
+    console.log('Setting up real-time listener for goals');
+    
+    // Set up real-time listener for all goals
+    const goalsRef = collection(db, 'users', user.uid, 'goals');
+    const unsubscribe = onSnapshot(goalsRef, async (querySnapshot) => {
+      console.log('Goals updated, recalculating scores');
+      
+      const goals = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      const scores = {};
+      
+      for (const area of userAreas) {
+        console.log('Processing area:', area.name);
+        
+        // Filter goals for this area
+        const areaGoals = goals.filter(goal => goal.areaId === area.id);
+        console.log(`Found ${areaGoals.length} goals for area ${area.name}`);
+
+        // New scoring system:
+        // Track daily completions and non-completions for the last 7 days
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Initialize daily tracking
+        const dailyStats = {};
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          dailyStats[dateStr] = {
+            completions: 0,
+            nonCompletions: 0,
+            totalGoals: 0
+          };
+        }
+
+        // Process each goal
+        areaGoals.forEach(goal => {
+          const goalDate = new Date(goal.startDate);
+          const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
+          
+          // Skip goals created before the 7-day window
+          if (localGoalDate < sevenDaysAgo) {
+            console.log(`Skipping goal created on ${localGoalDate.toISOString()} as it's before the 7-day window`);
+            return;
+          }
+          
+          // For each day in the last 7 days
+          for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            // Skip if goal was created after this date
+            if (localGoalDate > date) continue;
+            
+            // For no-repeat goals, only count on creation date
+            if (!goal.repeat && localGoalDate.toISOString().split('T')[0] !== dateStr) {
+              continue;
+          }
+
+            // Check if goal was completed on this date
+            const wasCompleted = goal.completions && 
+            Array.isArray(goal.completions) && 
+            goal.completions.some(completion => {
+              const completionDate = new Date(completion.completedAt);
+              const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
+              return localCompletionDate.toISOString().split('T')[0] === dateStr;
+            });
+
+            dailyStats[dateStr].totalGoals++;
+            if (wasCompleted) {
+              dailyStats[dateStr].completions++;
+            } else {
+              dailyStats[dateStr].nonCompletions++;
+            }
+          }
+        });
+
+        // Calculate overall completion rate
+        let totalCompletions = 0;
+        let totalNonCompletions = 0;
+        let totalDaysWithGoals = 0;
+
+        Object.values(dailyStats).forEach(day => {
+          if (day.totalGoals > 0) {
+            totalCompletions += day.completions;
+            totalNonCompletions += day.nonCompletions;
+            totalDaysWithGoals++;
+          }
+        });
+
+        console.log(`Area ${area.name} daily stats:`, dailyStats);
+        console.log(`Area ${area.name} summary:`, {
+          totalCompletions,
+          totalNonCompletions,
+          totalDaysWithGoals,
+          sevenDaysAgo: sevenDaysAgo.toISOString()
+        });
+
+        // Calculate score with proper rounding
+        // Score is now based on daily completion rates
+        const rawScore = totalDaysWithGoals > 0 
+          ? (totalCompletions / (totalCompletions + totalNonCompletions)) * 10 
+          : 0;
+        const score = Math.round(rawScore);
+
+        scores[area.id] = score;
+        console.log(`Final score for ${area.name}: ${score}/10 (${totalCompletions} completed, ${totalNonCompletions} non-completed across ${totalDaysWithGoals} days)`);
+      }
+
+      console.log('Final scores:', scores);
+      setAreaScores(scores);
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('Cleaning up goals listener');
+      unsubscribe();
+    };
+  }, [user, userAreas]);
 
   const handleImagePick = async () => {
     try {
@@ -188,14 +310,14 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.menuButton}
-            onPress={() => navigation.navigate('Menu')}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('Menu'); }}
             accessibilityLabel="Open menu"
           >
             <Icons name="menu" size={34} color="#9CA3AF" />
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.iconButton}
-            onPress={() => setShowMessageModal(true)}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowMessageModal(true); }}
             accessibilityLabel="Open messages"
           >
             <Icons name="mail" size={34} color="#9CA3AF" />
@@ -283,22 +405,26 @@ export default function ProfileScreen() {
                       nestedScrollEnabled={true}
                       scrollEnabled={true}
                     >
-                      <RadarChart 
-                        data={{
-                          labels: ['STRENGTH', 'VITALITY', 'AGILITY', 'INTELLIGENCE', 'SENSE'],
-                          datasets: [{
-                            data: [
-                              userData?.stats?.strength || 0,
-                              userData?.stats?.vitality || 0,
-                              userData?.stats?.agility || 0,
-                              userData?.stats?.intelligence || 0,
-                              userData?.stats?.sense || 0
-                            ],
-                          }],
-                        }}
-                        size={280}
-                        color="#87CEEB"
-                      />
+                      {loading ? (
+                        <Text style={styles.loadingText}>Loading stats...</Text>
+                      ) : (
+                        <>
+                          <RadarChart 
+                            data={{
+                              labels: userAreas.map(area => area.name),
+                              datasets: [{
+                                data: userAreas.map(area => {
+                                  const score = areaScores[area.id] || 0;
+                                  console.log(`Rendering score for ${area.name}: ${score}/10`);
+                                  return score;
+                                }),
+                              }],
+                            }}
+                            size={280}
+                            color="#87CEEB"
+                          />
+                        </>
+                      )}
                       <View style={styles.radarBottomSpace} />
                     </ScrollView>
                   </View>
@@ -310,13 +436,13 @@ export default function ProfileScreen() {
                 <View style={styles.tabsContainer}>
                   <TouchableOpacity 
                     style={[styles.tabButton, activeTab === 'ABOUT' && styles.activeTabButton]}
-                    onPress={() => setActiveTab('ABOUT')}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('ABOUT'); }}
                   >
                     <Text style={[styles.tabText, activeTab === 'ABOUT' && styles.activeTabText]}>ABOUT</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={[styles.tabButton, activeTab === 'STATS' && styles.activeTabButton]}
-                    onPress={() => setActiveTab('STATS')}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('STATS'); }}
                   >
                     <Text style={[styles.tabText, activeTab === 'STATS' && styles.activeTabText]}>STATS</Text>
                   </TouchableOpacity>
@@ -325,7 +451,10 @@ export default function ProfileScreen() {
             </View>
 
             {/* Streak Card */}
-            <TouchableOpacity style={styles.streakCard} onPress={() => setShowStreak(true)}>
+            <TouchableOpacity 
+              style={styles.streakCard}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowStreak(true); }}
+            >
               <View style={styles.streakContent}>
                 <View style={styles.streakIconContainer}>
                   <Icons name="star" size={24} color="#FFD700" />

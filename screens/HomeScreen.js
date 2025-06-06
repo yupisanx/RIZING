@@ -16,6 +16,7 @@ import { BlurView } from 'expo-blur';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { loadFonts, FONTS } from '../config/fonts';
 import { StyledText } from '../components/StyledText';
+import * as Haptics from 'expo-haptics';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_HEIGHT = 40;
@@ -305,7 +306,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.iconButton}
-          onPress={() => navigation.navigate('Menu')}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('Menu'); }}
         >
           <Icons name="menu" size={34} color="#9CA3AF" />
         </TouchableOpacity>
@@ -375,7 +376,7 @@ export default function HomeScreen() {
           <StyledText style={styles.goalsLeft}>
             {filteredGoals.length - filteredGoals.filter((goal) => goal.completed).length} goals left for today!
           </StyledText>
-          <TouchableOpacity onPress={() => navigation.navigate('SelfCareArea')}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('SelfCareArea'); }}>
             <MaterialCommunityIcons name="view-grid-plus" size={22} color="#fff" style={{ marginTop: 30 }} />
           </TouchableOpacity>
         </View>

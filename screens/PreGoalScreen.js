@@ -140,12 +140,9 @@ export default function PreGoalScreen() {
                   <Text style={[styles.goalTitle, { fontFamily: 'Cinzel', marginTop: 10 }]}>{goal.text || goal.title}</Text>
                 </View>
                 <View style={styles.goalRight}>
-                  <Text style={[styles.energyValue, { fontFamily: 'Cinzel' }]}>5⚡</Text>
-                  <ThreeDButton
-                    onPress={() => toggleGoalCompletion(goal.id)}
-                    completed={goal.completed}
-                    size={42}
-                  />
+                  <TouchableOpacity onPress={() => setEditGoalId(goal.id)} style={[styles.threeDotButton, { marginRight: 15 }]}>
+                    <MaterialIcons name="more-horiz" size={24} color="#fff" />
+                  </TouchableOpacity>
                 </View>
               </View>
               <Modal
@@ -239,12 +236,12 @@ const styles = StyleSheet.create({
   },
   goalCard: {
     backgroundColor: '#18181B',
-    borderRadius: 16,
-    padding: 19,
+    borderRadius: 24,
+    padding: 17,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#27272A',
-    width: '90%',
+    width: '87%',
     alignSelf: 'center',
   },
   goalContent: {
@@ -260,6 +257,8 @@ const styles = StyleSheet.create({
   goalRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginRight: -5,
   },
   energyValue: {
     fontSize: 14,

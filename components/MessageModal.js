@@ -4,8 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../utils/theme';
 
 const { width } = Dimensions.get('window');
-const NEON_COLOR = '#3b82f6'; // Blue
-const SHADOW_COLOR = 'rgba(59, 130, 246, 0.8)';
+const NEON_COLOR = '#9CA3AF'; // Grey
+const SHADOW_COLOR = 'rgba(156, 163, 175, 0.8)';
 
 const MessageModal = ({ visible, onClose }) => {
   const [fadeAnim] = useState(new Animated.Value(0));

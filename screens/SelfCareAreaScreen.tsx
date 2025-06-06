@@ -22,13 +22,14 @@ import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Calendar } from 'react-native-calendars'
 import { db } from '../config/firebase'
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, increment, arrayUnion } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, increment, arrayUnion, onSnapshot } from 'firebase/firestore'
 import { auth } from '../config/firebase'
 import { useSelfCareAreas } from '../contexts/SelfCareAreaContext'
 import { useGoals } from '../contexts/GoalsContext'
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ThreeDButton from '../components/ThreeDButton';
 import { useAuth } from '../contexts/AuthContext'
+import { AntDesign } from '@expo/vector-icons';
 
 // Define the AsyncStorage interface
 interface AsyncStorageInterface {
@@ -167,10 +168,13 @@ const MainScreen = memo(({
             {userAreas.map((area, index) => (
               <TouchableOpacity
                 key={`${area.id}_${index}`}
-                style={[styles.areaCard, { backgroundColor: area.color }]}
+                style={[
+                  styles.areaCard,
+                  { backgroundColor: '#000000' }
+                ]}
                 onPress={() => {
-                  setSelectedArea(area)
-                  setCurrentView("detail")
+                  setSelectedArea(area);
+                  setCurrentView('detail');
                 }}
                 activeOpacity={0.8}
               >
@@ -218,6 +222,7 @@ const DetailScreen = memo(({
   const { goals, isLoadingGoals, refreshGoals, setGoals } = useGoals();
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showExistingGoalsSheet, setShowExistingGoalsSheet] = useState(false);
   const { user } = useAuth();
 
   // Fetch goals from Firestore on mount
@@ -405,6 +410,33 @@ const DetailScreen = memo(({
     });
   };
 
+  // Calculate unique days with at least one goal completion for this area
+  const getActiveDaysCount = () => {
+    const daysSet = new Set<string>();
+    areaGoals.forEach(goal => {
+      if (goal.completions && Array.isArray(goal.completions)) {
+        goal.completions.forEach(completion => {
+          const date = new Date(completion.completedAt);
+          // Use only the date part (YYYY-MM-DD)
+          const dateStr = date.toISOString().split('T')[0];
+          daysSet.add(dateStr);
+        });
+      }
+    });
+    return daysSet.size;
+  };
+
+  // Calculate total number of completions for this area
+  const getCompletedGoalsCount = () => {
+    let total = 0;
+    areaGoals.forEach(goal => {
+      if (goal.completions && Array.isArray(goal.completions)) {
+        total += goal.completions.length;
+      }
+    });
+    return total;
+  };
+
   return (
     <SafeAreaView style={styles.detailContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
@@ -474,13 +506,7 @@ const DetailScreen = memo(({
                               goal.completed && { textDecorationLine: 'line-through', color: '#9CA3AF' }
                             ]}>{goal.text || goal.title}</Text>
                           </View>
-                          <View style={styles.goalRight}>
-                            <ThreeDButton
-                              onPress={() => toggleGoalCompletion(goal.id)}
-                              completed={goal.completed}
-                              size={42}
-                            />
-                          </View>
+                          <Text style={styles.ellipsis}>...</Text>
                         </View>
                         <Modal
                           visible={editGoalId === goal.id}
@@ -531,10 +557,19 @@ const DetailScreen = memo(({
                   activeOpacity={0.8}
                   onPress={handleAddNewGoal}
                 >
-                  <Text style={styles.addGoalButtonText}>Add a new goal</Text>
+                  <View style={styles.addGoalContent}>
+                    <View style={styles.plusIconContainer}>
+                      <Ionicons name="add" size={16} color="white" />
+                    </View>
+                    <Text style={styles.addGoalButtonText}>Add a new goal</Text>
+                  </View>
                 </TouchableOpacity>
                 <View style={styles.goalOptionsContainer}>
-                  <TouchableOpacity style={styles.goalOptionButton} activeOpacity={0.7}>
+                  <TouchableOpacity 
+                    style={styles.goalOptionButton} 
+                    activeOpacity={0.7}
+                    onPress={() => setShowExistingGoalsSheet(true)}
+                  >
                     <View style={styles.goalOptionContent}>
                       <View style={styles.plusIconContainer}>
                         <Ionicons name="add" size={16} color="white" />
@@ -542,6 +577,54 @@ const DetailScreen = memo(({
                       <Text style={styles.goalOptionText}>Add an existing goal</Text>
                     </View>
                   </TouchableOpacity>
+                </View>
+                {/* All-time Progress Card */}
+                <View style={{
+                  backgroundColor: '#FAFAFA',
+                  borderRadius: 24,
+                  padding: 31,
+                  marginTop: -68,
+                  marginBottom: 60,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                  borderWidth: 1,
+                  borderColor: '#F3F4F6',
+                  alignItems: 'center',
+                }}>
+                  <Text style={{
+                    fontSize: 18.2,
+                    fontWeight: '700',
+                    color: '#6B7280',
+                    marginBottom: 10,
+                    fontFamily: 'Cinzel',
+                  }}>Last 7 Day Progress</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', marginBottom: 4 }}>
+                    {/* Day active group */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}>
+                      <AntDesign name="checkcircle" size={28} color="#22C55E" style={{ marginRight: 8 }} />
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 22, fontWeight: '700', color: '#222', fontFamily: 'Cinzel', marginTop: 6, marginBottom: 0, marginLeft: -40 }}> {getActiveDaysCount()} </Text>
+                        <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '600', fontFamily: 'Cinzel', marginTop: 0 }}>day active</Text>
+                      </View>
+                    </View>
+                    {/* Goal done group */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="clipboard" size={22} color="#22C55E" style={{ marginRight: 8 }} />
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 22, fontWeight: '700', color: '#222', fontFamily: 'Cinzel', marginTop: 6, marginBottom: 0, marginLeft: -40 }}> {getCompletedGoalsCount()} </Text>
+                        <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '600', fontFamily: 'Cinzel', marginTop: 0 }}>goal done</Text>
+                      </View>
+                    </View>
+                  </View>
+                  <Text style={{ color: '#6B7280', fontSize: 16, fontWeight: '500', fontFamily: 'Cinzel', marginTop: 26 }}>
+                    {(() => {
+                      const sevenDaysAgo = new Date();
+                      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                      return `Since ${sevenDaysAgo.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+                    })()}
+                  </Text>
                 </View>
               </>
             )}
@@ -554,6 +637,66 @@ const DetailScreen = memo(({
         isFromSeeAll={true}
         selectedArea={selectedArea}
       />
+      {/* Existing Goals Bottom Sheet */}
+      <Modal
+        visible={showExistingGoalsSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExistingGoalsSheet(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainerMain, { height: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowExistingGoalsSheet(false)} style={styles.modalCloseButton}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { marginTop: 15, marginLeft: 30 }]}>Add Existing Goals</Text>
+            </View>
+            <ScrollView style={styles.modalContentMain} showsVerticalScrollIndicator={false}>
+              {goals.filter(goal => !goal.areaId || goal.areaId !== selectedArea?.id).length > 0 ? (
+                <View style={styles.goalsList}>
+                  {goals
+                    .filter(goal => !goal.areaId || goal.areaId !== selectedArea?.id)
+                    .map(goal => (
+                      <TouchableOpacity
+                        key={goal.id}
+                        style={[styles.goalCard, { width: '85%' }]}
+                        onPress={async () => {
+                          try {
+                            if (!user || !selectedArea) return;
+                            const goalRef = doc(db, 'users', user.uid, 'goals', goal.id);
+                            await updateDoc(goalRef, { areaId: selectedArea.id });
+                            setGoals(goals.map(g => 
+                              g.id === goal.id ? { ...g, areaId: selectedArea.id } : g
+                            ));
+                            setShowExistingGoalsSheet(false);
+                          } catch (error) {
+                            console.error('Error adding goal to area:', error);
+                            Alert.alert('Error', 'Failed to add goal to area.');
+                          }
+                        }}
+                      >
+                        <View style={styles.goalContent}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[
+                              styles.goalTitle,
+                              goal.completed && { textDecorationLine: 'line-through', color: '#9CA3AF' }
+                            ]}>{goal.text || goal.title}</Text>
+                          </View>
+                          <Text style={styles.ellipsis}>...</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No unassigned goals available</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 })
@@ -967,7 +1110,10 @@ const HabitTrackerMobile = memo(({
     const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
     
     let totalCompletions = 0;
-    goals.forEach(goal => {
+    // First filter goals by selected area
+    const areaGoals = goals.filter(goal => selectedArea && goal.areaId === selectedArea.id);
+    
+    areaGoals.forEach(goal => {
       if (goal.completions && Array.isArray(goal.completions)) {
         goal.completions.forEach(completion => {
           const completionDate = new Date(completion.completedAt);
@@ -1246,6 +1392,23 @@ export default function SelfCareAreaScreen() {
   // Use context for areas and loading
   const { userAreas, setUserAreas, isLoading, refreshAreas } = useSelfCareAreas();
 
+  // Remove the duplicate real-time listener from the screen component
+  // since we already have one in the context
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.log('No current user found in SelfCareAreaScreen');
+      return;
+    }
+
+    // Initial load of areas
+    const loadAreas = async () => {
+      console.log('SelfCareAreaScreen: Loading initial areas');
+      await refreshAreas(loadAreasFromFirestore);
+    };
+    loadAreas();
+  }, []);
+
   const handleClose = useCallback(() => {
     navigation.goBack()
   }, [navigation])
@@ -1338,44 +1501,46 @@ export default function SelfCareAreaScreen() {
 
   const handleCreateNewArea = useCallback(async () => {
     try {
-      setIsSaving(true)
+      setIsSaving(true);
       if (!newAreaName.trim()) {
-        Alert.alert('Error', 'Please enter a name for your area')
-        return
+        Alert.alert('Error', 'Please enter a name for your area');
+        return;
       }
       if (newAreaName.trim().length < 3) {
-        Alert.alert('Error', 'Area name must be at least 3 characters long')
-        return
+        Alert.alert('Error', 'Area name must be at least 3 characters long');
+        return;
       }
-      const currentUser = auth.currentUser
+      const currentUser = auth.currentUser;
       if (!currentUser) {
-        Alert.alert('Error', 'You must be logged in to create an area')
-        return
+        Alert.alert('Error', 'You must be logged in to create an area');
+        return;
       }
-      // Do NOT set id here, let Firestore generate it
+      
+      console.log('Creating new area:', newAreaName.trim());
       const newAreaData = {
         name: newAreaName.trim(),
         color: theme.colors.primary,
         emoji: "🌟",
         isCustom: true,
         userId: currentUser.uid
-      }
-      const userRef = doc(db, 'users', currentUser.uid)
-      const areasRef = collection(userRef, 'selfCareAreas')
-      const docRef = await addDoc(areasRef, newAreaData)
-      // Now use Firestore's ID
-      const newArea = { ...newAreaData, id: docRef.id }
-      setUserAreas(prev => [...prev, newArea])
-      setShowNewAreaModal(false)
-      setNewAreaName("")
-      Alert.alert('Success', 'Area created successfully!')
+      };
+      
+      const userRef = doc(db, 'users', currentUser.uid);
+      const areasRef = collection(userRef, 'selfCareAreas');
+      const docRef = await addDoc(areasRef, newAreaData);
+      console.log('New area created with ID:', docRef.id);
+      
+      // The real-time listener in the context will handle the update
+      setShowNewAreaModal(false);
+      setNewAreaName("");
+      Alert.alert('Success', 'Area created successfully!');
     } catch (err) {
-      console.error('Error creating new area:', err)
-      Alert.alert('Error', 'Failed to create area. Please try again.')
+      console.error('Error creating new area:', err);
+      Alert.alert('Error', 'Failed to create area. Please try again.');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }, [newAreaName, setUserAreas])
+  }, [newAreaName]);
 
   const handleEditArea = useCallback(async (editedArea: SelfCareArea) => {
     try {
@@ -1395,26 +1560,73 @@ export default function SelfCareAreaScreen() {
   const handleDeleteArea = useCallback(async (areaToDelete: SelfCareArea) => {
     try {
       if (!areaToDelete.id) {
-        console.error('Area ID is missing:', areaToDelete)
-        Alert.alert('Error', 'Cannot delete area: Missing ID')
-        return
+        console.error('Area ID is missing:', areaToDelete);
+        Alert.alert('Error', 'Cannot delete area: Missing ID');
+        return;
       }
-      const currentUser = auth.currentUser
+      const currentUser = auth.currentUser;
       if (!currentUser) {
-        Alert.alert('Error', 'You must be logged in to delete an area')
-        return
+        Alert.alert('Error', 'You must be logged in to delete an area');
+        return;
       }
-      const areaRef = doc(db, 'users', currentUser.uid, 'selfCareAreas', areaToDelete.id)
-      await deleteDoc(areaRef)
-      setUserAreas(prev => prev.filter(area => area.id !== areaToDelete.id))
-      setShowOptionsSheet(false)
-      setCurrentView("main")
-      Alert.alert('Success', 'Area deleted successfully!')
+
+      // First, get all goals associated with this area
+      const goalsRef = collection(db, 'users', currentUser.uid, 'goals');
+      const q = query(goalsRef, where('areaId', '==', areaToDelete.id));
+      const goalsSnapshot = await getDocs(q);
+      const associatedGoals = goalsSnapshot.docs.map(doc => doc.id);
+      
+      // If there are no associated goals, delete the area directly
+      if (associatedGoals.length === 0) {
+        const areaRef = doc(db, 'users', currentUser.uid, 'selfCareAreas', areaToDelete.id);
+        await deleteDoc(areaRef);
+        setShowOptionsSheet(false);
+        setCurrentView("main");
+        Alert.alert('Success', 'Area deleted successfully!');
+        return;
+      }
+
+      // If there are associated goals, show the warning
+      Alert.alert(
+        "Delete Area",
+        `Are you sure you want to delete "${areaToDelete.name}"? This will also delete ${associatedGoals.length} associated goal${associatedGoals.length !== 1 ? 's' : ''}. This action cannot be undone.`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                // Delete all associated goals first
+                const deletePromises = associatedGoals.map(goalId => 
+                  deleteDoc(doc(db, 'users', currentUser.uid, 'goals', goalId))
+                );
+                await Promise.all(deletePromises);
+                
+                // Then delete the area
+                const areaRef = doc(db, 'users', currentUser.uid, 'selfCareAreas', areaToDelete.id);
+                await deleteDoc(areaRef);
+                
+                // The real-time listener in the context will handle the update
+                setShowOptionsSheet(false);
+                setCurrentView("main");
+                Alert.alert('Success', `Area and ${associatedGoals.length} associated goal${associatedGoals.length !== 1 ? 's' : ''} deleted successfully!`);
+              } catch (err) {
+                console.error('Error during deletion:', err);
+                Alert.alert('Error', 'Failed to delete area and associated goals. Please try again.');
+              }
+            }
+          }
+        ]
+      );
     } catch (err) {
-      console.error('Error deleting area:', err)
-      Alert.alert('Error', 'Failed to delete area. Please try again.')
+      console.error('Error preparing area deletion:', err);
+      Alert.alert('Error', 'Failed to prepare area deletion. Please try again.');
     }
-  }, [setUserAreas])
+  }, []);
 
   if (isLoading && userAreas.length === 0) {
     return (
@@ -1619,7 +1831,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#D1D5DB",
-    borderStyle: "dashed",
+    borderStyle: "solid",
     borderRadius: 16,
     paddingVertical: 24,
     marginBottom: 32,
@@ -1916,18 +2128,35 @@ const styles = StyleSheet.create({
     fontFamily: 'Cinzel',
   },
   addGoalButton: {
-    backgroundColor: "#10B981",
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    marginBottom: 16,
-    width: "100%",
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#D1D5DB",
+    borderStyle: "solid",
+    borderRadius: 16,
+    paddingVertical: 24,
+    marginBottom: 16,
+    backgroundColor: "transparent",
+    minHeight: 72,
+  },
+  addGoalContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  plusIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#9CA3AF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addGoalButtonText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "white",
+    fontWeight: "500",
+    color: "#6B7280",
     fontFamily: 'Cinzel',
   },
   goalOptionsContainer: {
@@ -1943,14 +2172,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  plusIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#9CA3AF',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   goalOptionText: {
     fontSize: 16,
@@ -2335,7 +2556,7 @@ const styles = StyleSheet.create({
     color: '#374151',
     flex: 1,
     fontFamily: 'Cinzel',
-    marginTop: 0,
+    marginTop: 5,
     paddingLeft: 20,
     lineHeight: 24,
     textAlignVertical: 'center',
@@ -2484,5 +2705,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  whiteSection: {
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    padding: 20,
+    width: '75%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
 }) 

@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, Image } from 'react-native';
 import Checkbox from 'expo-checkbox';
 
-const PhantomStartScreen = ({ navigation, onClose }) => {
+const StartScreenn = ({ navigation, onClose }) => {
   const [agreed, setAgreed] = useState(false);
 
   return (
     <View style={styles.container}>
       <View style={styles.centered}>
-        <Text style={styles.title}>Welcome to Phantom</Text>
-        <Text style={styles.subtitle}>
-          To get started, create a new wallet or import an existing one.
-        </Text>
+        <Image 
+          source={require('../assets/brand-icon.png')} 
+          style={styles.brandIcon}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>MC APP</Text>
         <View style={styles.progressContainer}>
           <View style={styles.progressDot} />
         </View>
@@ -19,7 +21,8 @@ const PhantomStartScreen = ({ navigation, onClose }) => {
           <Checkbox
             value={agreed}
             onValueChange={setAgreed}
-            color={agreed ? '#a259ff' : undefined}
+            color={agreed ? '#3B82F6' : undefined}
+            style={styles.checkbox}
           />
           <Text style={styles.checkboxText}>
             I agree to the{' '}
@@ -32,12 +35,15 @@ const PhantomStartScreen = ({ navigation, onClose }) => {
           </Text>
         </View>
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: agreed ? '#a259ff' : '#444' }]}
+          style={[styles.button, { backgroundColor: agreed ? '#3B82F6' : '#444' }]}
           disabled={!agreed}
+          onPress={() => navigation.navigate('Signup')}
         >
-          <Text style={styles.buttonText}>Create a new wallet</Text>
+          <Text style={styles.buttonText}>Create a new account</Text>
         </TouchableOpacity>
-        <Text style={styles.disabledText}>I already have a wallet</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
+          <Text style={styles.disabledText}>I already have an account</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -47,25 +53,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    paddingBottom: 100,
   },
   centered: {
     width: '90%',
     alignItems: 'center',
+    marginBottom: 60,
   },
   title: {
     color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 12,
-    marginTop: 24,
+    marginTop: -80,
+    fontFamily: 'Cinzel',
   },
   subtitle: {
     color: '#fff',
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 24,
+    fontFamily: 'Cinzel',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -75,7 +85,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#a259ff',
+    backgroundColor: '#3B82F6',
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -86,15 +96,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 8,
     fontSize: 14,
+    fontFamily: 'Cinzel',
   },
   link: {
-    color: '#a259ff',
+    color: '#3B82F6',
     textDecorationLine: 'underline',
   },
   button: {
     width: '100%',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 16,
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -102,11 +113,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+    fontFamily: 'Cinzel',
   },
   disabledText: {
     color: '#888',
     fontSize: 16,
+    fontFamily: 'Cinzel',
+  },
+  checkbox: {
+    borderRadius: 8,
+  },
+  brandIcon: {
+    width: 276,
+    height: 276,
+    marginBottom: 20,
   },
 });
 
-export default PhantomStartScreen; 
+export default StartScreenn; 

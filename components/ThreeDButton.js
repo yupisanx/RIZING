@@ -6,6 +6,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 
 const ThreeDButton = ({ onPress, size = 48, completed = false }) => {
   return (
@@ -16,7 +17,7 @@ const ThreeDButton = ({ onPress, size = 48, completed = false }) => {
       {/* Main button */}
       <TouchableOpacity
         style={[styles.button, { width: size, height: size }]}
-        onPress={onPress}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); onPress && onPress(); }}
         activeOpacity={0.8}
       >
         <Icon name="check" size={size * 0.5} color="#ffffff" />
