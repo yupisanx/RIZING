@@ -154,17 +154,19 @@ export default function HomeScreen() {
     if (!dateStr) return new Date();
     const [year, month, day] = dateStr.split('-').map(Number);
     if (!year || !month || !day) return new Date(dateStr); // fallback
-    return new Date(year, month - 1, day);
+    return new Date(Date.UTC(year, month - 1, day));
   }
 
   // Helper to check if two dates are the same day
   function isSameDay(a, b) {
-    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    return a.getUTCFullYear() === b.getUTCFullYear() && 
+           a.getUTCMonth() === b.getUTCMonth() && 
+           a.getUTCDate() === b.getUTCDate();
   }
 
   // Filtering logic for goals
   const today = new Date();
-  today.setHours(0,0,0,0);
+  today.setUTCHours(0, 0, 0, 0);
 
   const filteredGoals = goals.filter(goal => {
     // First check if goal is archived
@@ -174,9 +176,7 @@ export default function HomeScreen() {
     if (goal.completions && Array.isArray(goal.completions)) {
       const hasCompletionToday = goal.completions.some(completion => {
         const completionDate = new Date(completion.completedAt);
-        // Adjust for timezone offset
-        const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
-        return isSameDay(localCompletionDate, today);
+        return isSameDay(completionDate, today);
       });
       // If completed today, don't show it
       if (hasCompletionToday) return false;
@@ -184,9 +184,11 @@ export default function HomeScreen() {
 
     // Get goal's start date
     const goalDate = parseLocalDate(goal.startDate);
-    // Adjust for timezone offset
-    const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
-    const goalDateStart = new Date(localGoalDate.getFullYear(), localGoalDate.getMonth(), localGoalDate.getDate());
+    const goalDateStart = new Date(Date.UTC(
+      goalDate.getUTCFullYear(),
+      goalDate.getUTCMonth(),
+      goalDate.getUTCDate()
+    ));
     
     // For future dates, check if today is before goal's start date
     if (today < goalDateStart) {
@@ -208,13 +210,13 @@ export default function HomeScreen() {
           return true;
         case 'WEEKLY':
           if (pattern.byDay) {
-            const dayStr = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][today.getDay()];
+            const dayStr = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][today.getUTCDay()];
             return pattern.byDay.includes(dayStr);
           }
           return true;
         case 'MONTHLY':
           if (pattern.byMonthDay) {
-            return pattern.byMonthDay.includes(today.getDate().toString());
+            return pattern.byMonthDay.includes(today.getUTCDate().toString());
           }
           return true;
         default:
@@ -451,7 +453,10 @@ export default function HomeScreen() {
           <View style={[styles.addGoalButtonContainer, { marginTop: 20 }]}> 
             <TouchableOpacity 
               style={styles.addGoalButton} 
-              onPress={() => navigation.navigate('Goal')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate('Goal');
+              }}
             >
               <View style={styles.addGoalContent}>
                 <MaterialIcons name="add" size={24} color="white" />

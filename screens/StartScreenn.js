@@ -14,9 +14,6 @@ const StartScreenn = ({ navigation, onClose }) => {
           resizeMode="contain"
         />
         <Text style={styles.title}>MC APP</Text>
-        <View style={styles.progressContainer}>
-          <View style={styles.progressDot} />
-        </View>
         <View style={styles.checkboxRow}>
           <Checkbox
             value={agreed}
@@ -27,7 +24,7 @@ const StartScreenn = ({ navigation, onClose }) => {
           <Text style={styles.checkboxText}>
             I agree to the{' '}
             <Text
-              style={styles.link}
+              style={[styles.link, { color: '#3B82F6' }]}
               onPress={() => Linking.openURL('https://phantom.app/terms')}
             >
               Terms of Service
@@ -61,6 +58,14 @@ const styles = StyleSheet.create({
     width: '90%',
     alignItems: 'center',
     marginBottom: 60,
+    position: 'relative',
+  },
+  brandIcon: {
+    width: 276,
+    height: 276,
+    position: 'absolute',
+    top: -320,
+    alignSelf: 'center',
   },
   title: {
     color: '#fff',
@@ -122,11 +127,6 @@ const styles = StyleSheet.create({
   },
   checkbox: {
     borderRadius: 8,
-  },
-  brandIcon: {
-    width: 276,
-    height: 276,
-    marginBottom: 20,
   },
 });
 

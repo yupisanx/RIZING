@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import Svg, { Polygon, Line, Text as SvgText, Circle } from 'react-native-svg';
 import Animated, { 
   useAnimatedProps, 
@@ -27,23 +27,23 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
   const angleStep = (2 * Math.PI) / data.labels.length;
   
   // Initialize all shared values at the top level with fixed number
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
   const pulseScale = useSharedValue(1);
   
   // Create fixed number of shared values
   const labelOpacities = [
-    useSharedValue(0), useSharedValue(0), useSharedValue(0),
-    useSharedValue(0), useSharedValue(0), useSharedValue(0),
-    useSharedValue(0), useSharedValue(0), useSharedValue(0),
-    useSharedValue(0)
+    useSharedValue(1), useSharedValue(1), useSharedValue(1),
+    useSharedValue(1), useSharedValue(1), useSharedValue(1),
+    useSharedValue(1), useSharedValue(1), useSharedValue(1),
+    useSharedValue(1)
   ];
   
   const valueOpacities = [
-    useSharedValue(0), useSharedValue(0), useSharedValue(0),
-    useSharedValue(0), useSharedValue(0), useSharedValue(0),
-    useSharedValue(0), useSharedValue(0), useSharedValue(0),
-    useSharedValue(0)
+    useSharedValue(1), useSharedValue(1), useSharedValue(1),
+    useSharedValue(1), useSharedValue(1), useSharedValue(1),
+    useSharedValue(1), useSharedValue(1), useSharedValue(1),
+    useSharedValue(1)
   ];
 
   // Animation props
@@ -60,46 +60,50 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
 
   // Effect hook for animations
   useEffect(() => {
-    // Reset all values first
-    scale.value = 0;
-    opacity.value = 0;
-    pulseScale.value = 1;
-    labelOpacities.forEach(opacity => opacity.value = 0);
-    valueOpacities.forEach(opacity => opacity.value = 0);
-
-    // Entrance animation
-    scale.value = withSpring(1, { damping: 15 });
-    opacity.value = withTiming(1, { duration: 800 });
-
-    // Pulsing animation
-    pulseScale.value = withRepeat(
-      withSequence(
-        withTiming(1.05, { duration: 1500 }),
-        withTiming(1, { duration: 1500 })
-      ),
-      -1,
-      true
-    );
-
-    // Staggered label animations - only animate up to the number of labels we have
-    data.labels.slice(0, MAX_DATA_POINTS).forEach((_, index) => {
-      labelOpacities[index].value = withDelay(
-        index * 200,
-        withTiming(1, { duration: 500 })
-      );
-      valueOpacities[index].value = withDelay(
-        index * 200 + 300,
-        withTiming(1, { duration: 500 })
-      );
-    });
-
-    // Cleanup function
-    return () => {
+    if (Platform.OS === 'ios') {
+      // Reset all values first
       scale.value = 0;
       opacity.value = 0;
       pulseScale.value = 1;
       labelOpacities.forEach(opacity => opacity.value = 0);
       valueOpacities.forEach(opacity => opacity.value = 0);
+
+      // Entrance animation
+      scale.value = withSpring(1, { damping: 15 });
+      opacity.value = withTiming(1, { duration: 800 });
+
+      // Pulsing animation
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 1500 }),
+          withTiming(1, { duration: 1500 })
+        ),
+        -1,
+        true
+      );
+
+      // Staggered label animations
+      data.labels.slice(0, MAX_DATA_POINTS).forEach((_, index) => {
+        labelOpacities[index].value = withDelay(
+          index * 200,
+          withTiming(1, { duration: 500 })
+        );
+        valueOpacities[index].value = withDelay(
+          index * 200 + 300,
+          withTiming(1, { duration: 500 })
+        );
+      });
+    }
+
+    // Cleanup function
+    return () => {
+      if (Platform.OS === 'ios') {
+        scale.value = 0;
+        opacity.value = 0;
+        pulseScale.value = 1;
+        labelOpacities.forEach(opacity => opacity.value = 0);
+        valueOpacities.forEach(opacity => opacity.value = 0);
+      }
     };
   }, [data.labels]);
 
@@ -151,7 +155,7 @@ const RadarChart = ({ data, size = 280, color = '#60a5fa' }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { width: size, height: size }]}>
       <Animated.View style={[styles.svgContainer, animatedProps]}>
         <Svg width={size} height={size}>
           {/* Background grid - circular rings */}

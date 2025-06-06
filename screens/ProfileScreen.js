@@ -95,11 +95,11 @@ export default function ProfileScreen() {
       }));
 
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0);
 
       const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      sevenDaysAgo.setHours(0, 0, 0, 0);
+      sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+      sevenDaysAgo.setUTCHours(0, 0, 0, 0);
 
       const scores = {};
       
@@ -110,16 +110,11 @@ export default function ProfileScreen() {
         const areaGoals = goals.filter(goal => goal.areaId === area.id);
         console.log(`Found ${areaGoals.length} goals for area ${area.name}`);
 
-        // New scoring system:
-        // Track daily completions and non-completions for the last 7 days
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
         // Initialize daily tracking
         const dailyStats = {};
         for (let i = 0; i < 7; i++) {
           const date = new Date(today);
-          date.setDate(date.getDate() - i);
+          date.setUTCDate(date.getUTCDate() - i);
           const dateStr = date.toISOString().split('T')[0];
           dailyStats[dateStr] = {
             completions: 0,
@@ -131,36 +126,36 @@ export default function ProfileScreen() {
         // Process each goal
         areaGoals.forEach(goal => {
           const goalDate = new Date(goal.startDate);
-          const localGoalDate = new Date(goalDate.getTime() + goalDate.getTimezoneOffset() * 60000);
+          goalDate.setUTCHours(0, 0, 0, 0);
           
           // Skip goals created before the 7-day window
-          if (localGoalDate < sevenDaysAgo) {
-            console.log(`Skipping goal created on ${localGoalDate.toISOString()} as it's before the 7-day window`);
+          if (goalDate < sevenDaysAgo) {
+            console.log(`Skipping goal created on ${goalDate.toISOString()} as it's before the 7-day window`);
             return;
           }
           
           // For each day in the last 7 days
           for (let i = 0; i < 7; i++) {
             const date = new Date(today);
-            date.setDate(date.getDate() - i);
+            date.setUTCDate(date.getUTCDate() - i);
             const dateStr = date.toISOString().split('T')[0];
             
             // Skip if goal was created after this date
-            if (localGoalDate > date) continue;
+            if (goalDate > date) continue;
             
             // For no-repeat goals, only count on creation date
-            if (!goal.repeat && localGoalDate.toISOString().split('T')[0] !== dateStr) {
+            if (!goal.repeat && goalDate.toISOString().split('T')[0] !== dateStr) {
               continue;
-          }
+            }
 
             // Check if goal was completed on this date
             const wasCompleted = goal.completions && 
-            Array.isArray(goal.completions) && 
-            goal.completions.some(completion => {
-              const completionDate = new Date(completion.completedAt);
-              const localCompletionDate = new Date(completionDate.getTime() + completionDate.getTimezoneOffset() * 60000);
-              return localCompletionDate.toISOString().split('T')[0] === dateStr;
-            });
+              Array.isArray(goal.completions) && 
+              goal.completions.some(completion => {
+                const completionDate = new Date(completion.completedAt);
+                completionDate.setUTCHours(0, 0, 0, 0);
+                return completionDate.toISOString().split('T')[0] === dateStr;
+              });
 
             dailyStats[dateStr].totalGoals++;
             if (wasCompleted) {
@@ -193,11 +188,10 @@ export default function ProfileScreen() {
         });
 
         // Calculate score with proper rounding
-        // Score is now based on daily completion rates
         const rawScore = totalDaysWithGoals > 0 
           ? (totalCompletions / (totalCompletions + totalNonCompletions)) * 10 
           : 0;
-        const score = Math.round(rawScore);
+        const score = Number(rawScore.toFixed(1));
 
         scores[area.id] = score;
         console.log(`Final score for ${area.name}: ${score}/10 (${totalCompletions} completed, ${totalNonCompletions} non-completed across ${totalDaysWithGoals} days)`);
@@ -414,7 +408,7 @@ export default function ProfileScreen() {
                               labels: userAreas.map(area => area.name),
                               datasets: [{
                                 data: userAreas.map(area => {
-                                  const score = areaScores[area.id] || 0;
+                                  const score = Number(areaScores[area.id] || 0);
                                   console.log(`Rendering score for ${area.name}: ${score}/10`);
                                   return score;
                                 }),

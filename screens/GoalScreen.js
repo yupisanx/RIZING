@@ -904,31 +904,37 @@ export default function GoalScreen({ navigation, route }) {
             activeOpacity={1}
             onPress={e => e.stopPropagation()}
           >
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#374151', marginBottom: 24, textAlign: 'center', fontFamily: 'Cinzel' }}>Choose a Self-Care Area</Text>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, backgroundColor: selectedArea === null ? '#F3F4F6' : 'transparent', marginBottom: 8 }}
-              onPress={() => { setSelectedArea(null); }}
+            <Text style={styles.modalTitle}>Choose a Self-Care Area</Text>
+            <ScrollView 
+              style={styles.areaList}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
             >
-              <Text style={{ fontSize: 16, color: '#374151', fontFamily: 'Cinzel' }}>None</Text>
-              {selectedArea === null && <Icon name="check-circle" size={22} color="#000" />}
-            </TouchableOpacity>
-            {userAreas.map(area => (
               <TouchableOpacity
-                key={area.id}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, backgroundColor: selectedArea?.id === area.id ? '#F3F4F6' : 'transparent', marginBottom: 8 }}
-                onPress={() => { setSelectedArea(area); }}
+                style={[styles.areaOption, selectedArea === null && styles.selectedAreaOption]}
+                onPress={() => { setSelectedArea(null); }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 16, color: '#374151', fontFamily: 'Cinzel' }}>{area.name}</Text>
-                </View>
-                {selectedArea?.id === area.id && <Icon name="check-circle" size={22} color="#000" />}
+                <Text style={styles.areaOptionText}>None</Text>
+                {selectedArea === null && <Icon name="check-circle" size={22} color="#000" />}
               </TouchableOpacity>
-            ))}
+              {userAreas.map(area => (
+                <TouchableOpacity
+                  key={area.id}
+                  style={[styles.areaOption, selectedArea?.id === area.id && styles.selectedAreaOption]}
+                  onPress={() => { setSelectedArea(area); }}
+                >
+                  <View style={styles.areaOptionContent}>
+                    <Text style={styles.areaOptionText}>{area.name}</Text>
+                  </View>
+                  {selectedArea?.id === area.id && <Icon name="check-circle" size={22} color="#000" />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <TouchableOpacity
-              style={{ backgroundColor: '#000', borderRadius: 12, paddingVertical: 16, marginTop: 16 }}
+              style={styles.doneButton}
               onPress={() => setShowAreaModal(false)}
             >
-              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', textAlign: 'center', fontFamily: 'Cinzel' }}>Done</Text>
+              <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -1055,12 +1061,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    flex: 1,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginBottom: 24,
     textAlign: 'center',
-    fontFamily: 'Cinzel-Regular',
+    fontFamily: 'Cinzel'
   },
   optionItemContainer: {
     marginBottom: 12,
@@ -1580,5 +1586,45 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#e0e0e0',
+  },
+  areaList: {
+    maxHeight: height * 0.5,
+    width: '100%',
+  },
+  areaOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  selectedAreaOption: {
+    backgroundColor: '#F3F4F6',
+  },
+  areaOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  areaOptionText: {
+    fontSize: 16,
+    color: '#374151',
+    fontFamily: 'Cinzel',
+  },
+  doneButton: {
+    backgroundColor: '#000',
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginTop: 17,
+    width: '100%',
+  },
+  doneButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    fontFamily: 'Cinzel',
   },
 }) 

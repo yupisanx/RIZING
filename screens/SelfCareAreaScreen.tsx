@@ -599,7 +599,7 @@ const DetailScreen = memo(({
                     color: '#6B7280',
                     marginBottom: 10,
                     fontFamily: 'Cinzel',
-                  }}>Last 7 Day Progress</Text>
+                  }}>All-time Progress</Text>
                   <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', marginBottom: 4 }}>
                     {/* Day active group */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}>
@@ -618,13 +618,6 @@ const DetailScreen = memo(({
                       </View>
                     </View>
                   </View>
-                  <Text style={{ color: '#6B7280', fontSize: 16, fontWeight: '500', fontFamily: 'Cinzel', marginTop: 26 }}>
-                    {(() => {
-                      const sevenDaysAgo = new Date();
-                      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                      return `Since ${sevenDaysAgo.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-                    })()}
-                  </Text>
                 </View>
               </>
             )}
@@ -726,7 +719,7 @@ const AreaSelectionModal = memo(({
             {selfCareAreas.map((area, index) => (
               <TouchableOpacity
                 key={`selection_${area.id}_${index}`}
-                style={[styles.selectionAreaCard, { backgroundColor: area.color }]}
+                style={[styles.selectionAreaCard, { backgroundColor: '#000000' }]}
                 onPress={() => handleSelectPredefinedArea(area)}
                 activeOpacity={0.8}
               >
@@ -1734,29 +1727,29 @@ const styles = StyleSheet.create({
   },
   speechBubble: {
     backgroundColor: "white",
-    borderRadius: 24,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    marginBottom: 20,
-    maxWidth: width * 0.8,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginBottom: 16,
+    maxWidth: width * 0.7,
     position: "relative",
   },
   speechText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
     color: "#374151",
-    textAlign: "center",
+    textAlign: "left",
     fontFamily: 'Cinzel',
   },
   speechTail: {
     position: "absolute",
-    bottom: -8,
-    left: 32,
+    bottom: -6,
+    left: 28,
     width: 0,
     height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 8,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
     borderTopColor: "white",
