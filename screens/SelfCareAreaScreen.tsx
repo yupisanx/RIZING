@@ -15,6 +15,7 @@ import {
   Alert,
   Platform,
   FlatList,
+  Image,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -30,6 +31,7 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ThreeDButton from '../components/ThreeDButton';
 import { useAuth } from '../contexts/AuthContext'
 import { AntDesign } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 // Define the AsyncStorage interface
 interface AsyncStorageInterface {
@@ -116,13 +118,12 @@ export type SelfCareArea = {
 type NavigationProp = NativeStackNavigationProp<any>
 
 const selfCareAreas: SelfCareArea[] = [
-  { id: "calm_1", name: "Calm", color: "#86EFAC", emoji: "🧘" },
-  { id: "nutrition_2", name: "Nutrition", color: "#4ADE80", emoji: "🥗" },
-  { id: "productivity_3", name: "Productivity", color: "#FDE68A", emoji: "✅" },
-  { id: "movement_4", name: "Movement", color: "#FCD34D", emoji: "🏃" },
-  { id: "sleep_5", name: "Sleep", color: "#A855F7", emoji: "😴" },
-  { id: "gratitude_6", name: "Gratitude", color: "#F472B6", emoji: "🙏" },
-  { id: "connection_7", name: "Connection", color: "#6366F1", emoji: "👥" },
+  { id: "hygiene_1", name: "Hygiene", color: "#86EFAC", emoji: "🧼" },
+  { id: "discipline_2", name: "Discipline", color: "#4ADE80", emoji: "🎯" },
+  { id: "finance_3", name: "Finance", color: "#FDE68A", emoji: "💰" },
+  { id: "mind_4", name: "Mind", color: "#FCD34D", emoji: "🧠" },
+  { id: "body_5", name: "Body", color: "#A855F7", emoji: "💪" },
+  { id: "relationships_6", name: "Relationships", color: "#F472B6", emoji: "❤️" },
 ]
 
 // Memoized Components
@@ -144,15 +145,33 @@ const MainScreen = memo(({
   <SafeAreaView style={styles.container}>
     <StatusBar barStyle="light-content" backgroundColor="#000000" />
     <View style={styles.headerSection}>
-      <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-        <Ionicons name="close" size={24} color="white" />
+      <TouchableOpacity 
+        style={styles.closeButton} 
+        onPress={async () => {
+          try {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            handleClose();
+          } catch (error) {
+            console.log('Haptic feedback error:', error);
+            handleClose();
+          }
+        }}
+      >
+        <AntDesign name="back" size={34} color="white" />
       </TouchableOpacity>
       <View style={styles.speechBubble}>
         <Text style={styles.speechText}>Nourish what matters to you</Text>
         <View style={styles.speechTail} />
       </View>
     </View>
+    <View style={{ alignItems: 'center', marginTop: Platform.OS === 'ios' ? 70 : 150 }}>
+      <Image 
+        source={require('../assets/brand-icon.png')}
+        style={{ width: 200, height: 200, resizeMode: 'contain', tintColor: 'white' }}
+      />
+    </View>
     <View style={styles.contentSection}>
+      <Text style={styles.sectionTitle}>Self-Care Areas</Text>
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -160,9 +179,6 @@ const MainScreen = memo(({
           paddingBottom: Platform.OS === 'android' ? 24 : 32
         }}
       >
-        <View style={styles.titleContainer}>
-          <Text style={styles.mainTitle}>My Self-Care Areas</Text>
-        </View>
         {userAreas.length > 0 && (
           <View style={styles.areasGrid}>
             {userAreas.map((area, index) => (
@@ -185,7 +201,19 @@ const MainScreen = memo(({
             ))}
           </View>
         )}
-        <TouchableOpacity style={styles.newAreaButton} onPress={() => setShowAreaSelection(true)} activeOpacity={0.7}>
+        <TouchableOpacity 
+          style={styles.newAreaButton} 
+          onPress={async () => {
+            try {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setShowAreaSelection(true);
+            } catch (error) {
+              console.log('Haptic feedback error:', error);
+              setShowAreaSelection(true);
+            }
+          }} 
+          activeOpacity={0.7}
+        >
           <Ionicons name="add" size={20} color="#9CA3AF" />
           <Text style={styles.newAreaButtonText}>Start a new area</Text>
         </TouchableOpacity>
@@ -441,18 +469,41 @@ const DetailScreen = memo(({
     <SafeAreaView style={styles.detailContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <View style={styles.detailHeader}>
-        <TouchableOpacity onPress={() => setCurrentView("main")} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="white" />
+        <TouchableOpacity 
+          onPress={async () => {
+            try {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setCurrentView("main");
+            } catch (error) {
+              console.log('Haptic feedback error:', error);
+              setCurrentView("main");
+            }
+          }} 
+          style={styles.backButton}
+        >
+          <AntDesign name="back" size={34} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowOptionsSheet(true)} style={styles.optionsButton}>
+        <TouchableOpacity 
+          onPress={async () => {
+            try {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setShowOptionsSheet(true);
+            } catch (error) {
+              console.log('Haptic feedback error:', error);
+              setShowOptionsSheet(true);
+            }
+          }} 
+          style={styles.optionsButton}
+        >
           <Ionicons name="ellipsis-horizontal" size={24} color="white" />
         </TouchableOpacity>
       </View>
       <View style={styles.detailTitleSection}>
-        <View style={styles.detailIconContainer}>
-          <View style={styles.detailIconCircle}>
-            <Ionicons name="checkmark-circle" size={24} color="white" />
-          </View>
+        <View style={[styles.detailIconContainer, { backgroundColor: 'transparent' }]}>
+          <Image 
+            source={require('../assets/brand-icon.png')}
+            style={{ width: 200, height: 200, resizeMode: 'contain', tintColor: 'white' }}
+          />
         </View>
         <Text style={styles.detailTitle}>{selectedArea?.name}</Text>
       </View>
@@ -584,7 +635,7 @@ const DetailScreen = memo(({
                   borderRadius: 24,
                   padding: 31,
                   marginTop: -68,
-                  marginBottom: 60,
+                  marginBottom: 120, // Increased from 60 to 120
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.05,
@@ -603,7 +654,18 @@ const DetailScreen = memo(({
                   <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', marginBottom: 4 }}>
                     {/* Day active group */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}>
-                      <AntDesign name="checkcircle" size={28} color="#22C55E" style={{ marginRight: 8 }} />
+                      <TouchableOpacity 
+                        onPress={async () => {
+                          try {
+                            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          } catch (error) {
+                            console.log('Haptic feedback error:', error);
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <AntDesign name="checkcircle" size={28} color="#22C55E" style={{ marginRight: 8 }} />
+                      </TouchableOpacity>
                       <View style={{ alignItems: 'center' }}>
                         <Text style={{ fontSize: 22, fontWeight: '700', color: '#222', fontFamily: 'Cinzel', marginTop: 6, marginBottom: 0, marginLeft: -40 }}> {getActiveDaysCount()} </Text>
                         <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '600', fontFamily: 'Cinzel', marginTop: 0 }}>day active</Text>
@@ -611,7 +673,18 @@ const DetailScreen = memo(({
                     </View>
                     {/* Goal done group */}
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Ionicons name="clipboard" size={22} color="#22C55E" style={{ marginRight: 8 }} />
+                      <TouchableOpacity 
+                        onPress={async () => {
+                          try {
+                            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          } catch (error) {
+                            console.log('Haptic feedback error:', error);
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="clipboard" size={22} color="#22C55E" style={{ marginRight: 8 }} />
+                      </TouchableOpacity>
                       <View style={{ alignItems: 'center' }}>
                         <Text style={{ fontSize: 22, fontWeight: '700', color: '#222', fontFamily: 'Cinzel', marginTop: 6, marginBottom: 0, marginLeft: -40 }}> {getCompletedGoalsCount()} </Text>
                         <Text style={{ color: '#6B7280', fontSize: 13, fontWeight: '600', fontFamily: 'Cinzel', marginTop: 0 }}>goal done</Text>
@@ -734,9 +807,16 @@ const AreaSelectionModal = memo(({
           </View>
           <TouchableOpacity
             style={styles.createCustomButton}
-            onPress={() => {
-              setShowAreaSelection(false)
-              setShowNewAreaModal(true)
+            onPress={async () => {
+              try {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setShowAreaSelection(false);
+                setShowNewAreaModal(true);
+              } catch (error) {
+                console.log('Haptic feedback error:', error);
+                setShowAreaSelection(false);
+                setShowNewAreaModal(true);
+              }
             }}
             activeOpacity={0.7}
           >
@@ -1385,6 +1465,21 @@ export default function SelfCareAreaScreen() {
   // Use context for areas and loading
   const { userAreas, setUserAreas, isLoading, refreshAreas } = useSelfCareAreas();
 
+  // Reset screen state when tab is focused
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setCurrentView("main");
+      setShowAreaSelection(false);
+      setShowNewAreaModal(false);
+      setShowCalendarModal(false);
+      setShowOptionsSheet(false);
+      setSelectedArea(null);
+      setShowEditModal(false);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   // Remove the duplicate real-time listener from the screen component
   // since we already have one in the context
   useEffect(() => {
@@ -1474,8 +1569,7 @@ export default function SelfCareAreaScreen() {
                 const userRef = doc(db, 'users', currentUser.uid)
                 const areasRef = collection(userRef, 'selfCareAreas')
                 const docRef = await addDoc(areasRef, newArea)
-                const completeArea: SelfCareArea = { ...newArea, id: docRef.id }
-                setUserAreas(prev => [...prev, completeArea])
+                // Remove manual state update since real-time listener will handle it
                 setShowAreaSelection(false)
                 Alert.alert('Success', 'Area created successfully!')
               } catch (err) {
@@ -1490,7 +1584,7 @@ export default function SelfCareAreaScreen() {
       console.error('Error in handleSelectPredefinedArea:', err)
       Alert.alert('Error', 'Something went wrong. Please try again.')
     }
-  }, [setUserAreas])
+  }, [setUserAreas, setShowAreaSelection])
 
   const handleCreateNewArea = useCallback(async () => {
     try {
@@ -1733,6 +1827,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     maxWidth: width * 0.7,
     position: "relative",
+    marginTop: Platform.OS === 'ios' ? -35 : 0,
   },
   speechText: {
     fontSize: 16,
@@ -1754,11 +1849,14 @@ const styles = StyleSheet.create({
     borderRightColor: "transparent",
     borderTopColor: "white",
   },
-  plantsContainer: {
-    display: 'none',
-  },
-  plantEmoji: {
-    display: 'none',
+  brandIconContainer: {
+    width: 120,
+    height: 120,
+    backgroundColor: "white",
+    borderRadius: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
   contentSection: {
     position: "absolute",
@@ -1872,7 +1970,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Cinzel',
   },
   bottomSpacer: {
-    height: Platform.OS === 'android' ? 24 : 32,
+    height: Platform.OS === 'android' ? 144 : 152, // Added 60px to existing values
   },
   modalOverlay: {
     flex: 1,
@@ -2009,12 +2107,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-    marginTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 0,
+    marginTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : -10,
     transform: [{ scale: 1.2 }],
   },
   optionsButton: {
     padding: 8,
-    marginTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 0,
+    marginTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 6 : -10,
     transform: [{ scale: 1.2 }],
   },
   detailTitleSection: {
@@ -2469,12 +2567,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: "600",
     color: "#374151",
-    marginTop: 24,
+    marginTop: 5,
     marginBottom: 16,
     fontFamily: 'Cinzel',
+    textAlign: 'center',
   },
   colorGrid: {
     flexDirection: "row",

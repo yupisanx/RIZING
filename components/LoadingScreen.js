@@ -28,9 +28,9 @@ export default function LoadingScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <LinearGradient
-        colors={[theme.colors.background, theme.colors.background, theme.colors.secondary]}
+        colors={[theme.colors.background, theme.colors.background, theme.colors.background]}
         locations={[0, 0.7, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

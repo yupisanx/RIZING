@@ -14,6 +14,10 @@ import RadarChart from '../components/common/RadarChart';
 import StreakScreen from './StreakScreen';
 import * as Haptics from 'expo-haptics';
 import { useSelfCareAreas } from '../contexts/SelfCareAreaContext';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../config/firebase';
+import { updateProfile } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SCREEN_PADDING = 20;
 const HEADER_HEIGHT = Platform.select({
@@ -59,14 +63,18 @@ export default function ProfileScreen() {
     const userRef = doc(db, 'users', user.uid);
     
     const unsubscribe = onSnapshot(userRef, (doc) => {
-      console.log('Received user data update');
-            if (doc.exists()) {
-        setUserData(doc.data());
-            }
-            setLoading(false);
+      console.log('Received user data update:', doc.data());
+      if (doc.exists()) {
+        const data = doc.data();
+        setUserData({
+          ...data,
+          displayName: user.displayName // Include the displayName from auth
+        });
+      }
+      setLoading(false);
     }, (error) => {
       console.error('Error in user data listener:', error);
-            setLoading(false);
+      setLoading(false);
     });
 
     return () => {
@@ -210,7 +218,6 @@ export default function ProfileScreen() {
 
   const handleImagePick = async () => {
     try {
-      // Request permissions
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (!permissionResult.granted) {
@@ -218,27 +225,56 @@ export default function ProfileScreen() {
         return;
       }
 
-      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.5,
       });
 
-      if (!result.canceled) {
-        setProfileImage(result.assets[0].uri);
-        
-        // Update user data in Firestore
-        if (user?.uid) {
-          try {
-            await updateDoc(doc(db, 'users', user.uid), {
-              profileImage: result.assets[0].uri
+      if (!result.canceled && user?.uid) {
+        try {
+          setLoading(true);
+          console.log('Starting image save process...');
+          
+          const uri = result.assets[0].uri;
+          console.log('Image URI:', uri);
+          
+          // Save to AsyncStorage
+          console.log('Saving to AsyncStorage...');
+          await AsyncStorage.setItem(`profile_image_${user.uid}`, uri);
+          console.log('Saved to AsyncStorage successfully');
+          
+          // Update local state
+          console.log('Updating local state...');
+          setProfileImage(uri);
+          
+          // Update Firestore with local URI for now
+          console.log('Updating Firestore...');
+          await updateDoc(doc(db, 'users', user.uid), {
+            profileImage: uri
+          });
+          console.log('Firestore updated successfully');
+          
+          // Update auth profile
+          if (auth.currentUser) {
+            console.log('Updating auth profile...');
+            await updateProfile(auth.currentUser, {
+              photoURL: uri
             });
-          } catch (error) {
-            console.error('Error updating profile image:', error);
-            Alert.alert('Error', 'Failed to update profile image. Please try again.');
+            console.log('Auth profile updated successfully');
           }
+          
+          setLoading(false);
+          Alert.alert('Success', 'Profile picture updated successfully!');
+        } catch (error) {
+          console.error('Save error details:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+          });
+          setLoading(false);
+          Alert.alert('Error', 'Failed to save image. Please try again.');
         }
       }
     } catch (error) {
@@ -246,6 +282,27 @@ export default function ProfileScreen() {
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
+
+  // Add this function to load the profile image from AsyncStorage
+  const loadProfileImage = async () => {
+    if (user?.uid) {
+      try {
+        const savedImage = await AsyncStorage.getItem(`profile_image_${user.uid}`);
+        if (savedImage) {
+          setProfileImage(savedImage);
+        }
+      } catch (error) {
+        console.error('Error loading profile image:', error);
+      }
+    }
+  };
+
+  // Add this to your useEffect
+  useEffect(() => {
+    if (user) {
+      loadProfileImage();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -447,15 +504,26 @@ export default function ProfileScreen() {
             {/* Streak Card */}
             <TouchableOpacity 
               style={styles.streakCard}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowStreak(true); }}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (Platform.OS === 'android') {
+                  navigation.navigate('StreakScreen');
+                } else {
+                  setShowStreak(true);
+                }
+              }}
             >
               <View style={styles.streakContent}>
                 <View style={styles.streakIconContainer}>
-                  <Icons name="star" size={24} color="#FFD700" />
+                  <Image 
+                    source={require('../assets/streak-icon.png')} 
+                    style={{ width: 48, height: 48 }}
+                    resizeMode="contain"
+                  />
                 </View>
                 <View style={styles.streakTextContainer}>
-                  <Text style={styles.streakCount}>{userData?.streak || '0'} day streak</Text>
-                  <Text style={styles.streakSubtext}>Longest: {userData?.longestStreak || '0'} days</Text>
+                  <Text style={styles.streakCount}>{userData?.streak || '7'} day streak</Text>
+                  <Text style={styles.streakSubtext}>Longest: {userData?.longestStreak || '7'} days</Text>
                 </View>
                 <Icons name="chevron-right" size={24} color="#8B8B8B" />
               </View>
@@ -471,7 +539,9 @@ export default function ProfileScreen() {
         visible={showMessageModal}
         onClose={() => setShowMessageModal(false)}
       />
-      <StreakScreen visible={showStreak} onClose={() => setShowStreak(false)} />
+      {Platform.OS !== 'android' && (
+        <StreakScreen visible={showStreak} onClose={() => setShowStreak(false)} />
+      )}
     </>
   );
 }
@@ -510,7 +580,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_PADDING,
   },
   mainCard: {
-    backgroundColor: '#1F1F1F',
+    backgroundColor: '#000000',
     borderRadius: 20,
     marginBottom: 15,
     height: 440,
@@ -664,7 +734,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Cinzel',
   },
   streakCard: {
-    backgroundColor: '#1F1F1F',
+    backgroundColor: '#000000',
     borderRadius: 15,
     padding: 15,
     marginTop: 10,
@@ -684,16 +754,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   streakIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF9E6',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
   },
   streakTextContainer: {
     flex: 1,
+    marginLeft: 10,
   },
   streakCount: {
     fontSize: 16,

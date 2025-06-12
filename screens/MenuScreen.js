@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Icons } from '../components/Icons';
 import Icon from "react-native-vector-icons/Feather";
 import MaterialIcon from "react-native-vector-icons/MaterialCommunityIcons";
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import StartScreenn from './StartScreenn';
@@ -30,7 +31,7 @@ export default function MenuScreen() {
           activeOpacity={0.7} 
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }}
         >
-          <Icon name="chevron-left" size={48} color="#6B7280" />
+          <AntDesign name="back" size={34} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -62,7 +63,7 @@ export default function MenuScreen() {
             <TouchableOpacity 
               style={styles.gridCard} 
               activeOpacity={0.7}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('PreGoalScreen'); }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('PreGoal'); }}
             >
               <View style={styles.iconContainer}>
                 <View style={styles.goalsIconBg}>
@@ -94,7 +95,7 @@ export default function MenuScreen() {
             </TouchableOpacity>
 
             {/* Newsletters */}
-            <TouchableOpacity style={styles.gridCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
+            <TouchableOpacity style={styles.gridCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('OnboardingHistory'); }}>
               <View style={styles.iconContainer}>
                 <View style={styles.newslettersIconBg}>
                   <View style={styles.newslettersLineContainer}>
@@ -109,7 +110,7 @@ export default function MenuScreen() {
           </View>
 
           {/* History */}
-          <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('PreGoalScreen'); }}>
+          <TouchableOpacity style={styles.fullWidthCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('PreGoal'); }}>
             <View style={styles.iconContainer}>
               <View style={styles.historyIconBg}>
                 <View style={styles.historyIconCalendar}>
@@ -123,7 +124,7 @@ export default function MenuScreen() {
         </View>
 
         {/* Submit feedback */}
-        <TouchableOpacity style={styles.menuCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); /* existing action */ }}>
+        <TouchableOpacity style={styles.menuCard} activeOpacity={0.7} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('NewOnboarding'); }}>
           <View style={styles.menuCardContent}>
             <View style={styles.menuCardLeft}>
               <View style={styles.iconContainer}>

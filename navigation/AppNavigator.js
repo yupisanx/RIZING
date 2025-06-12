@@ -17,6 +17,11 @@ import { SelfCareAreaProvider } from '../contexts/SelfCareAreaContext';
 import { GoalsProvider } from '../contexts/GoalsContext';
 import PreGoalScreen from '../screens/PreGoalScreen';
 import StartScreenn from '../screens/StartScreenn';
+import StreakScreen from '../screens/StreakScreen';
+import OnboardingHistoryScreen from '../screens/OnboardingHistoryScreen';
+import newonboardingflow from '../screens/newonboardingflow';
+import ContractScreen from '../screens/ContractScreen';
+import CelebrationScreen from '../screens/CelebrationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +33,7 @@ const Stack = createNativeStackNavigator();
 export default function AppNavigator() {
   const { user, loading, hasCompletedOnboarding } = useAuth();
 
+  // Show loading screen while initializing
   if (loading) {
     return <LoadingScreen />;
   }
@@ -45,87 +51,86 @@ export default function AppNavigator() {
             }}
           >
             {!user ? (
+              // Auth Stack
               <>
                 <Stack.Screen 
                   name="StartScreenn" 
                   component={StartScreenn}
-                  options={{
-                    animation: 'fade',
-                  }}
+                  options={{ animation: 'fade' }}
                 />
                 <Stack.Screen 
                   name="LoginScreen" 
                   component={LoginScreen}
-                  options={{
-                    animation: 'slide_from_right',
-                  }}
+                  options={{ animation: 'slide_from_right' }}
                 />
                 <Stack.Screen 
                   name="Signup" 
                   component={SignupScreen}
-                  options={{
-                    animation: 'slide_from_right',
-                  }}
+                  options={{ animation: 'slide_from_right' }}
                 />
               </>
-            ) : !hasCompletedOnboarding ? (
-              <Stack.Screen 
-                name="Onboarding" 
-                component={OnboardingScreen}
-                options={{
-                  animation: 'fade',
-                }}
-              />
             ) : (
+              // Main App Stack
               <>
+                {!hasCompletedOnboarding ? (
+              <>
+                <Stack.Screen 
+                  name="Onboarding" 
+                  component={newonboardingflow}
+                  options={{ animation: 'fade' }}
+                />
+                <Stack.Screen 
+                  name="Contract" 
+                  component={ContractScreen}
+                  options={{ animation: 'slide_from_right' }}
+                />
+                    <Stack.Screen 
+                      name="Celebration" 
+                      component={CelebrationScreen}
+                      options={{ animation: 'fade' }}
+                    />
+              </>
+            ) : (
                 <Stack.Screen 
                   name="MainTabs" 
                   component={TabNavigator}
-                  options={{
-                    animation: 'fade',
-                  }}
+                  options={{ animation: 'fade' }}
                 />
+                )}
                 <Stack.Screen 
                   name="ExerciseTable" 
                   component={ExerciseTableScreen}
-                  options={{
-                    animation: 'slide_from_right',
-                  }}
+                  options={{ animation: 'slide_from_right' }}
                 />
                 <Stack.Screen 
                   name="Goal" 
                   component={GoalScreen}
-                  options={{
-                    animation: 'slide_from_right',
-                  }}
+                  options={{ animation: 'slide_from_right' }}
                 />
                 <Stack.Screen 
                   name="Menu" 
                   component={MenuScreen}
-                  options={{
-                    animation: 'slide_from_right',
-                  }}
+                  options={{ animation: 'slide_from_right' }}
                 />
                 <Stack.Screen 
                   name="SelfCareArea" 
                   component={SelfCareAreaScreen}
-                  options={{
-                    animation: 'slide_from_right',
-                  }}
+                  options={{ animation: 'slide_from_right' }}
                 />
                 <Stack.Screen 
-                  name="PreGoalScreen" 
+                  name="PreGoal" 
                   component={PreGoalScreen}
-                  options={{
-                    animation: 'slide_from_right',
-                  }}
+                  options={{ animation: 'slide_from_right' }}
                 />
                 <Stack.Screen 
-                  name="StartScreenn" 
-                  component={StartScreenn}
-                  options={{
-                    animation: 'slide_from_right',
-                  }}
+                  name="Streak" 
+                  component={StreakScreen}
+                  options={{ animation: 'slide_from_right' }}
+                />
+                <Stack.Screen 
+                  name="OnboardingHistory" 
+                  component={OnboardingHistoryScreen}
+                  options={{ animation: 'slide_from_right' }}
                 />
               </>
             )}

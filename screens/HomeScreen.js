@@ -17,6 +17,7 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import { loadFonts, FONTS } from '../config/fonts';
 import { StyledText } from '../components/StyledText';
 import * as Haptics from 'expo-haptics';
+import StreakScreen from './StreakScreen';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_HEIGHT = 40;
@@ -42,6 +43,7 @@ export default function HomeScreen() {
   const [fadingOutGoalId, setFadingOutGoalId] = useState(null);
   const [energy, setEnergy] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showStreak, setShowStreak] = useState(false);
 
   // Ref hooks
   const slideAnim = useRef(new Animated.Value(width)).current;
@@ -297,7 +299,10 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      { paddingBottom: Platform.OS === 'ios' ? 60 : 60 }
+    ]}>
       <LinearGradient
         colors={['#000000', '#000000', '#000000']}
         locations={[0, 0.7, 1]}
@@ -311,6 +316,24 @@ export default function HomeScreen() {
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('Menu'); }}
         >
           <Icons name="menu" size={34} color="#9CA3AF" />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.iconButton, { marginLeft: 'auto', marginRight: 5, flexDirection: 'row', alignItems: 'center' }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (Platform.OS === 'android') {
+              navigation.navigate('StreakScreen');
+            } else {
+              setShowStreak(true);
+            }
+          }}
+        >
+          <Image 
+            source={require('../assets/streak-icon.png')} 
+            style={{ width: 40, height: 40 }}
+            resizeMode="contain"
+          />
+          <StyledText style={{ color: '#9CA3AF', marginLeft: 2, marginTop: 7, fontSize: 24 }}>0</StyledText>
         </TouchableOpacity>
       </View>
 
@@ -495,6 +518,9 @@ export default function HomeScreen() {
             size={Platform.OS === 'android' ? 5 : 1}
           />
         </View>
+      )}
+      {Platform.OS !== 'android' && (
+        <StreakScreen visible={showStreak} onClose={() => setShowStreak(false)} />
       )}
     </View>
   );

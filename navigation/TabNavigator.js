@@ -8,7 +8,7 @@ import { isTablet, platformSelect } from '../utils/responsive';
 import { useWelcome } from '../contexts/WelcomeContext';
 import LoadingScreen from '../components/LoadingScreen';
 import HomeScreen from '../screens/HomeScreen';
-import QuestScreen from '../screens/QuestScreen';
+import SelfCareAreaScreen from '../screens/SelfCareAreaScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import * as Haptics from 'expo-haptics';
 
@@ -32,24 +32,17 @@ const TabIcon = React.memo(({ name, color, size }) => (
 export default function TabNavigator() {
   const { showingWelcome } = useWelcome();
   const insets = useSafeAreaInsets();
-  const [isReady, setIsReady] = useState(false);
   const [orientation, setOrientation] = useState('PORTRAIT');
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsReady(true), 1000);
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
       setOrientation(window.width > window.height ? 'LANDSCAPE' : 'PORTRAIT');
     });
 
     return () => {
-      clearTimeout(timer);
       subscription?.remove();
     };
   }, []);
-
-  if (!isReady) {
-    return <LoadingScreen />;
-  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -90,9 +83,6 @@ export default function TabNavigator() {
             paddingTop: Platform.OS === 'android' ? theme.spacing.xs - 4 : theme.spacing.xs,
           },
           headerShown: false,
-          contentStyle: {
-            paddingBottom: Platform.OS === 'android' ? 80 : 90,
-          },
         }}
         screenListeners={{
           tabPress: () => {
@@ -115,8 +105,8 @@ export default function TabNavigator() {
           }}
         />
         <Tab.Screen
-          name="Quest"
-          component={QuestScreen}
+          name="Areas"
+          component={SelfCareAreaScreen}
           options={{
             tabBarIcon: ({ color }) => (
               <TabIcon 
@@ -125,7 +115,7 @@ export default function TabNavigator() {
                 color={color} 
               />
             ),
-            tabBarAccessibilityLabel: "Quest tab",
+            tabBarAccessibilityLabel: "Areas tab",
           }}
         />
         <Tab.Screen

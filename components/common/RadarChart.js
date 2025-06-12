@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     width: 100,
   },
   value: {
-    fontSize: 15,
+    fontSize: Platform.OS === 'android' ? 13 : 15,
     fontFamily: 'Cinzel',
     textAlign: 'center',
     width: 40,

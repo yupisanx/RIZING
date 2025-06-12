@@ -1,0 +1,55 @@
+rules_version = '2';
+
+// Firestore Rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read/write their own user data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow users to access their own quest data
+      match /quests/{questId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Allow users to access their own goals data
+      match /goals/{goalId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        
+        // Allow users to access their own goal completions
+        match /goalCompletions/{completionId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
+      // Allow users to access their own self-care areas
+      match /selfCareAreas/{areaId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // Public data collection - authenticated users can read, owners can write
+    match /publicData/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        !resource.data.exists() || resource.data.userId == request.auth.uid
+      );
+    }
+  }
+}
+
+// Storage Rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow users to read/write their own profile images
+    match /users/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Default deny for all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 

@@ -25,7 +25,7 @@ const StartScreenn = ({ navigation, onClose }) => {
             I agree to the{' '}
             <Text
               style={[styles.link, { color: '#3B82F6' }]}
-              onPress={() => Linking.openURL('https://phantom.app/terms')}
+              onPress={() => Linking.openURL('https://sololeveling.netmarble.com/en')}
             >
               Terms of Service
             </Text>

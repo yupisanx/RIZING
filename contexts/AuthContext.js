@@ -19,37 +19,76 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!isMounted) return;
+      
       if (user) {
-        setUser(user);
+        setLoading(true); // Set loading when auth state changes
         try {
+          // Try to get user data from AsyncStorage first
+          const cachedData = await AsyncStorage.getItem('@user_data');
+          if (cachedData) {
+            const userData = JSON.parse(cachedData);
+            setHasCompletedOnboarding(userData.hasCompletedOnboarding || false);
+          }
+
+          // Then fetch fresh data from Firebase
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
             await AsyncStorage.setItem('@user_data', JSON.stringify(userData));
             setHasCompletedOnboarding(userData.hasCompletedOnboarding || false);
           }
+          setUser(user);
         } catch (error) {
           console.error('Error syncing user data:', error);
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+          }
         }
       } else {
         setUser(null);
         setHasCompletedOnboarding(false);
         await AsyncStorage.removeItem('@user_data');
-      }
+        if (isMounted) {
       setLoading(false);
+        }
+      }
+      if (isMounted) {
+        setIsInitialized(true);
+      }
     });
 
-    return unsubscribe;
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const login = async (email, password) => {
     try {
+      setLoading(true); // Set loading immediately
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      const user = userCredential.user;
+      
+      // Fetch user data from Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        // Cache the data
+        await AsyncStorage.setItem('@user_data', JSON.stringify(userData));
+        setHasCompletedOnboarding(userData.hasCompletedOnboarding || false);
+      }
+      
+      setUser(user);
+      return user;
     } catch (error) {
+      setLoading(false); // Only set loading to false on error
       throw error;
     }
   };
@@ -110,8 +149,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  if (loading) {
-    return null; // The AppNavigator will handle showing the LoadingScreen
+  if (loading || !isInitialized) {
+    return null; // The LoginScreen will handle showing the loading state
   }
 
   return (

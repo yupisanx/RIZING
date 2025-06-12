@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet, Dimensions, Image } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { Platform } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -57,27 +59,67 @@ function renderCalendarGrid() {
 }
 
 export default function StreakScreen({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const navigation = useNavigation();
   // For navigation, you can later add month state and logic
   const handlePrevMonth = () => {};
   const handleNextMonth = () => {};
+  const handleClose = () => {
+    if (Platform.OS === 'android') {
+      navigation.goBack();
+    } else {
+      onClose();
+    }
+  };
+  if (Platform.OS === 'android') {
+    return (
+      <View style={styles.overlay}>
+        <View style={styles.container}>
+          {/* Close Button */}
+          <TouchableOpacity style={styles.closeBtnCircle} onPress={handleClose}>
+            <Ionicons name="close" size={24} color="#9CA3AF" />
+          </TouchableOpacity>
+          {/* Streak Badge and Calendar ... */}
+          <View style={styles.streakBadge}>
+            <Text style={styles.streakNumber}>{currentStreak}</Text>
+            <Text style={styles.streakText}>day streak!</Text>
+            <Text style={styles.streakLongest}>Longest: {longestStreak} days</Text>
+          </View>
+          <View style={styles.calendarContainer}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: 8 }}>
+              <TouchableOpacity onPress={handlePrevMonth} style={styles.arrowCircle}>
+                <Text style={{ color: '#9CA3AF', fontSize: 20, fontFamily: 'Cinzel', textAlign: 'center' }}>{'<'}</Text>
+              </TouchableOpacity>
+              <Text style={[styles.calendarMonth, { flex: 1, textAlign: 'center' }]}>Jun 2025</Text>
+              <TouchableOpacity onPress={handleNextMonth} style={styles.arrowCircle}>
+                <Text style={{ color: '#9CA3AF', fontSize: 20, fontFamily: 'Cinzel', textAlign: 'center' }}>{'>'}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.weekDaysRow}>
+              {weekDays.map((d, i) => (
+                <Text key={i} style={styles.weekDayText}>{d}</Text>
+              ))}
+            </View>
+            {renderCalendarGrid()}
+          </View>
+        </View>
+      </View>
+    );
+  }
+  // iOS/modal version
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={styles.container}>
           {/* Close Button */}
-          <TouchableOpacity style={styles.closeBtnCircle} onPress={onClose}>
+          <TouchableOpacity style={styles.closeBtnCircle} onPress={handleClose}>
             <Ionicons name="close" size={24} color="#9CA3AF" />
           </TouchableOpacity>
-
-          {/* Streak Badge */}
+          {/* Streak Badge and Calendar ... */}
           <View style={styles.streakBadge}>
             <Text style={styles.streakNumber}>{currentStreak}</Text>
             <Text style={styles.streakText}>day streak!</Text>
-            <Text style={styles.streakSubText}>Open the app and visit Wobbles every day to maintain your self-care streak!</Text>
             <Text style={styles.streakLongest}>Longest: {longestStreak} days</Text>
           </View>
-
-          {/* Calendar */}
           <View style={styles.calendarContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: 8 }}>
               <TouchableOpacity onPress={handlePrevMonth} style={styles.arrowCircle}>
@@ -151,14 +193,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     marginTop: -8,
-    fontFamily: 'Cinzel',
-  },
-  streakSubText: {
-    fontSize: 15,
-    color: '#fff',
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 4,
     fontFamily: 'Cinzel',
   },
   streakLongest: {

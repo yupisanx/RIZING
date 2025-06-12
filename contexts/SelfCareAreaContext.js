@@ -2,15 +2,32 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { db } from '../config/firebase';
 import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { auth } from '../config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const SelfCareAreaContext = createContext();
 
 export function SelfCareAreaProvider({ children }) {
   const [userAreas, setUserAreas] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
 
   // Set up real-time listener for self-care areas
   useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('User not authenticated in SelfCareAreaContext');
+      setUserAreas([]);
+      return;
+    }
+
     const currentUser = auth.currentUser;
     if (!currentUser) {
       console.log('No current user found in SelfCareAreaContext');
@@ -39,10 +56,15 @@ export function SelfCareAreaProvider({ children }) {
       console.log('Cleaning up real-time listener in SelfCareAreaContext');
       unsubscribe();
     };
-  }, []);
+  }, [isAuthenticated]);
 
   // This function can be called from anywhere to refresh areas
   const refreshAreas = useCallback(async (fetchAreasFn) => {
+    if (!isAuthenticated) {
+      console.log('Cannot refresh areas: User not authenticated');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const areas = await fetchAreasFn();
@@ -52,7 +74,7 @@ export function SelfCareAreaProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <SelfCareAreaContext.Provider value={{ userAreas, setUserAreas, isLoading, refreshAreas }}>
